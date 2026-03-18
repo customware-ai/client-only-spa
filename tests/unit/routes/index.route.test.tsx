@@ -22,7 +22,7 @@ describe("dashboard route", () => {
     expect(screen.getByText("Account details and history")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add Division" })).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Opportunities (2)" }),
+      screen.getByRole("heading", { name: "Opportunities (1)" }),
     ).toBeInTheDocument();
     expect(screen.getByText("DR INC - PM")).toBeInTheDocument();
   });

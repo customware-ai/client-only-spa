@@ -52,6 +52,25 @@ describe("main layout", () => {
     expect(await screen.findByText("Configure body")).toBeInTheDocument();
   });
 
+  it("closes the mobile workflow sheet after selecting a workflow step", async () => {
+    const router = createLayoutRouter(["/"]);
+    render(<RouterProvider router={router} />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Open workflow" }));
+
+    expect(await screen.findByRole("dialog", { name: "Workflow" })).toBeInTheDocument();
+
+    const workflowButtons = screen.getAllByRole("button", {
+      name: "Equipment Selected",
+    });
+    const mobileWorkflowButton = workflowButtons[workflowButtons.length - 1];
+
+    await userEvent.click(mobileWorkflowButton!);
+
+    expect(await screen.findByText("Configure body")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "Workflow" })).not.toBeInTheDocument();
+  });
+
   it("toggles the persisted theme mode from the header control", async () => {
     const router = createLayoutRouter(["/"]);
     render(<RouterProvider router={router} />);

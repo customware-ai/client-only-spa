@@ -43,6 +43,6 @@ describe("estimate route", () => {
     await userEvent.click(screen.getByRole("button", { name: "Files" }));
     await userEvent.click(screen.getByRole("button", { name: "Add Mock File" }));
 
-    expect(await screen.findByText("mock-file-3.pdf")).toBeInTheDocument();
+    expect(await screen.findByText("mock-file-2.pdf")).toBeInTheDocument();
   });
 });

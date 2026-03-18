@@ -1,4 +1,4 @@
-import { useEffect, type ReactElement } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router";
 import {
   CircleHelp,
@@ -50,6 +50,7 @@ function getEstimateIdFromPathname(pathname: string): string | null {
  */
 export default function MainLayout(): ReactElement {
   const location = useLocation();
+  const [isWorkflowSheetOpen, setIsWorkflowSheetOpen] = useState(false);
   const {
     workspace,
     resetWorkspace,
@@ -115,7 +116,7 @@ export default function MainLayout(): ReactElement {
         <div className="flex min-h-screen min-w-0 flex-1 flex-col">
           <header className="border-b border-stone-200 bg-card dark:border-stone-800">
             <div className="flex h-14 items-center gap-3 px-4 lg:px-6">
-              <Sheet>
+              <Sheet open={isWorkflowSheetOpen} onOpenChange={setIsWorkflowSheetOpen}>
                 <SheetTrigger asChild>
                   <Button
                     variant="ghost"
@@ -129,12 +130,16 @@ export default function MainLayout(): ReactElement {
                 <SheetContent side="left" className="w-[260px] p-0" showCloseButton={false}>
                   <SheetHeader className="sr-only">
                     <SheetTitle>Workflow</SheetTitle>
+                    <SheetDescription>
+                      Review workflow sections and navigate between mocked CPQ stages.
+                    </SheetDescription>
                   </SheetHeader>
                   <WorkflowRail
                     workspace={workspace}
                     className="border-r-0"
                     onSelectStep={setActiveWorkflowStep}
                     onAdvance={advanceWorkflow}
+                    onNavigate={() => setIsWorkflowSheetOpen(false)}
                   />
                 </SheetContent>
               </Sheet>

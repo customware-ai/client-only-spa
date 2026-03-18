@@ -15,13 +15,13 @@ describe("useCpqWorkspaceStorage", () => {
     const { result } = renderHook(() => useCpqWorkspaceStorage());
 
     await act(async () => {
-      result.current.addCatalogItem("est-001002", "item-dc-com-hoist");
+      result.current.addCatalogItem("est-001002", "item-inspection-plan");
     });
 
-    expect(result.current.workspace.estimates).toHaveLength(2);
+    expect(result.current.workspace.estimates).toHaveLength(1);
     expect(
       result.current.workspace.estimates[0]?.build_selections.some(
-        (selection) => selection.item_id === "item-dc-com-hoist",
+        (selection) => selection.item_id === "item-inspection-plan",
       ),
     ).toBe(true);
 
@@ -31,7 +31,7 @@ describe("useCpqWorkspaceStorage", () => {
 
     expect(
       storedWorkspace.estimates[0]?.build_selections.some(
-        (selection) => selection.item_id === "item-dc-com-hoist",
+        (selection) => selection.item_id === "item-inspection-plan",
       ),
     ).toBe(true);
   });
@@ -46,7 +46,7 @@ describe("useCpqWorkspaceStorage", () => {
     });
 
     expect(duplicatedEstimateId).toBe("est-001002-copy");
-    expect(result.current.workspace.estimates).toHaveLength(3);
+    expect(result.current.workspace.estimates).toHaveLength(2);
     expect(result.current.workspace.estimates[0]?.status).toBe("draft");
   });
 

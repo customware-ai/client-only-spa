@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 import ConfigureEstimatePage from "../../../app/routes/configure.$estimateId";
@@ -23,7 +23,7 @@ describe("configure route", () => {
         addCatalogItemToEstimateInWorkspace(
           createDefaultCpqWorkspace(),
           "est-001002",
-          "item-dc-com-hoist",
+          "item-inspection-plan",
         ),
         "est-001002",
       ).total,
@@ -39,7 +39,13 @@ describe("configure route", () => {
 
     expect(await screen.findByRole("heading", { name: "Configure" })).toBeInTheDocument();
 
-    await userEvent.click(screen.getAllByRole("button", { name: "Add" })[2]!);
+    const inspectionCard = screen.getByText("Inspection Plan").closest(".rounded-xl");
+
+    expect(inspectionCard).not.toBeNull();
+
+    await userEvent.click(
+      within(inspectionCard as HTMLElement).getByRole("button", { name: "Add" }),
+    );
 
     expect(await screen.findByText(expectedTotal)).toBeInTheDocument();
   });
@@ -59,6 +65,6 @@ describe("configure route", () => {
     await userEvent.type(intakePrompt, "inspection");
 
     expect((await screen.findAllByText("Inspection Plan")).length).toBeGreaterThan(0);
-    expect(screen.queryByText("Double Girder")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Add" })).toHaveLength(1);
   });
 });

@@ -11,7 +11,7 @@ test.describe("cpq workspace e2e", () => {
 
     await expect(page.getByRole("heading", { name: "DR INC" })).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Opportunities (2)" }),
+      page.getByRole("heading", { name: "Opportunities (1)" }),
     ).toBeVisible();
 
     await page
@@ -29,9 +29,18 @@ test.describe("cpq workspace e2e", () => {
       .last();
     const totalBefore = await totalLocator.textContent();
 
-    await page.getByRole("button", { name: "Add" }).nth(2).click();
+    await page
+      .locator("section")
+      .filter({ hasText: "Inspection Plan" })
+      .getByRole("button", { name: "Add" })
+      .click();
 
-    await expect(page.getByText("DC-Com Hoist")).toBeVisible();
+    await expect(
+      page
+        .getByRole("complementary")
+        .filter({ hasText: "Build" })
+        .getByText("Inspection Plan"),
+    ).toBeVisible();
 
     const totalAfter = await totalLocator.textContent();
     expect(totalAfter).not.toBe(totalBefore);
@@ -45,11 +54,11 @@ test.describe("cpq workspace e2e", () => {
     await page.getByRole("button", { name: "Files" }).click();
     await page.getByRole("button", { name: "Add Mock File" }).click();
 
-    await expect(page.getByText("mock-file-3.pdf")).toBeVisible();
+    await expect(page.getByText("mock-file-2.pdf")).toBeVisible();
 
     await page.reload();
 
-    await expect(page.getByText("mock-file-3.pdf")).toBeVisible();
+    await expect(page.getByText("mock-file-2.pdf")).toBeVisible();
 
     await page.goto("/");
 

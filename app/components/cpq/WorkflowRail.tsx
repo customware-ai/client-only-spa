@@ -25,6 +25,7 @@ interface WorkflowRailProps {
   className?: string;
   onSelectStep: (stepId: string) => void;
   onAdvance: () => void;
+  onNavigate?: () => void;
 }
 
 /**
@@ -85,6 +86,7 @@ export function WorkflowRail({
   className,
   onSelectStep,
   onAdvance,
+  onNavigate,
 }: WorkflowRailProps): ReactElement {
   const navigate = useNavigate();
   const progress = getWorkflowProgress(workspace);
@@ -97,6 +99,7 @@ export function WorkflowRail({
    */
   const handleSelectStep = (stepId: string): void => {
     onSelectStep(stepId);
+    onNavigate?.();
     void navigate(getWorkflowTargetHref(stepId, workspace.active_estimate_id));
   };
 
@@ -111,6 +114,7 @@ export function WorkflowRail({
       orderedSteps[Math.min(activeStepIndex + 1, orderedSteps.length - 1)];
 
     onAdvance();
+    onNavigate?.();
 
     if (nextStep) {
       void navigate(
