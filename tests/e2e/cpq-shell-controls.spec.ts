@@ -6,7 +6,7 @@ test.describe("workflow starter shell e2e", () => {
     page,
   }) => {
     await page.goto("/");
-    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.setViewportSize({ width: 1536, height: 960 });
     await seedWorkspace(page);
     await page.reload();
 
@@ -67,7 +67,7 @@ test.describe("workflow starter shell e2e", () => {
     await expect(
       page.getByRole("button", { name: /Scope & Review/i }).first(),
     ).toContainText("Upcoming");
-    await expect(sidebarGap).toHaveCSS("width", "256px");
+    await expect(sidebarGap).toHaveCSS("width", "288px");
     await expect(sidebarContainer).toHaveCSS("left", "0px");
 
     await sectionToggle.click();
@@ -85,17 +85,82 @@ test.describe("workflow starter shell e2e", () => {
     await expect(page).toHaveURL(/\/workflow\/quote-identity$/);
     await expect(page.getByRole("heading", { name: "Quote Identity" })).toBeVisible();
 
+    const footerActionLayout = await page
+      .getByTestId("workflow-step-footer-actions")
+      .evaluate((node) => {
+        const element = node instanceof HTMLElement ? node : null;
+
+        if (!element) {
+          return null;
+        }
+
+        const styles = getComputedStyle(element);
+
+        return {
+          display: styles.display,
+          justifyContent: styles.justifyContent,
+          minWidth: styles.minWidth,
+        };
+      });
+
+    const proceedButtonLayout = await page
+      .getByRole("button", { name: "Continue to Starter Scope" })
+      .evaluate((node) => {
+        const element = node instanceof HTMLElement ? node : null;
+
+        if (!element) {
+          return null;
+        }
+
+        const styles = getComputedStyle(element);
+
+        return {
+          minWidth: styles.minWidth,
+        };
+      });
+
+    const pageGridColumns = await page
+      .getByRole("heading", { name: "Quote Identity" })
+      .locator("..")
+      .locator("..")
+      .locator("xpath=following-sibling::*[1]")
+      .evaluate((node) => {
+        const element = node instanceof HTMLElement ? node : null;
+
+        if (!element) {
+          return null;
+        }
+
+        const styles = getComputedStyle(element);
+
+        return {
+          gridTemplateColumns: styles.gridTemplateColumns,
+          columnGap: styles.columnGap,
+        };
+      });
+
+    expect(footerActionLayout).toEqual({
+      display: "flex",
+      justifyContent: "center",
+      minWidth: "320px",
+    });
+    expect(proceedButtonLayout).toEqual({
+      minWidth: "256px",
+    });
+    expect(pageGridColumns?.columnGap).toBe("24px");
+    expect(pageGridColumns?.gridTemplateColumns.endsWith(" 360px")).toBe(true);
+
     await page.getByRole("button", { name: "Toggle workflow sidebar" }).click();
 
     await expect(sidebarGap).toHaveCSS("width", "0px");
-    await expect(sidebarContainer).toHaveCSS("left", "-256px");
+    await expect(sidebarContainer).toHaveCSS("left", "-288px");
     await expect(
       page.getByRole("heading", { name: "Quote Identity" }),
     ).toBeVisible();
 
     await page.getByRole("button", { name: "Toggle workflow sidebar" }).click();
 
-    await expect(sidebarGap).toHaveCSS("width", "256px");
+    await expect(sidebarGap).toHaveCSS("width", "288px");
     await expect(sidebarContainer).toHaveCSS("left", "0px");
   });
 

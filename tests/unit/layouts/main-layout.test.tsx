@@ -105,8 +105,12 @@ describe("main layout", () => {
     render(<RouterProvider router={router} />);
 
     const logoMark = await screen.findByText("CW");
+    const sidebarWrapper = document.querySelector('[data-slot="sidebar-wrapper"]');
+    const contentContainer = document.querySelector("main > div");
 
     expect(logoMark).toBeInTheDocument();
+    expect(sidebarWrapper).toHaveClass("2xl:[--sidebar-width:18rem]");
+    expect(contentContainer).toHaveClass("max-w-[1400px]", "2xl:max-w-[1520px]");
     expect(logoMark).toHaveClass("rounded-xl", "px-2.5", "py-2");
     expect(logoMark).not.toHaveClass("border");
     expect(screen.queryByText("Customware CPQ")).not.toBeInTheDocument();

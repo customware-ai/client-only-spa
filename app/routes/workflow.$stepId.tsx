@@ -593,7 +593,7 @@ export default function WorkflowStepPage(): ReactElement {
         </div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:gap-6 2xl:grid-cols-[minmax(0,1fr)_360px]">
         <section className="rounded-lg border border-stone-200 bg-card dark:border-zinc-800">
           <div className="border-b border-stone-200 px-5 py-4 dark:border-zinc-800">
             <div className="text-sm font-medium text-stone-950 dark:text-zinc-100">
@@ -603,22 +603,31 @@ export default function WorkflowStepPage(): ReactElement {
 
           <div className="px-5 py-5">{stepBody}</div>
 
-          <div className="flex flex-col gap-3 border-t border-stone-200 px-5 py-4 dark:border-zinc-800 md:flex-row md:items-center md:justify-between">
-            <div className="text-sm text-stone-500 dark:text-zinc-400">
+          <div
+            data-testid="workflow-step-footer"
+            className="flex flex-col gap-4 border-t border-stone-200 px-5 py-4 dark:border-zinc-800 xl:grid xl:grid-cols-[minmax(0,1fr)_auto] xl:items-stretch"
+          >
+            <div className="text-sm text-stone-500 dark:text-zinc-400 xl:flex xl:items-center xl:pr-4">
               {readinessMessage}
             </div>
-            <Button
-              disabled={!isEditable || workflowCompleted || !ready}
-              onClick={handleProceed}
+            <div
+              data-testid="workflow-step-footer-actions"
+              className="xl:flex xl:min-w-[280px] xl:items-center xl:justify-center xl:border-l xl:border-stone-200 xl:pl-5 2xl:min-w-[320px] dark:xl:border-zinc-800"
             >
-              <span>
-                {workflowCompleted
-                  ? "Workflow complete"
-                  : nextStep
-                    ? `Continue to ${nextStep.stepLabel}`
-                    : "Complete workflow"}
-              </span>
-            </Button>
+              <Button
+                className="w-full sm:w-auto xl:min-w-[240px] 2xl:min-w-[256px]"
+                disabled={!isEditable || workflowCompleted || !ready}
+                onClick={handleProceed}
+              >
+                <span>
+                  {workflowCompleted
+                    ? "Workflow complete"
+                    : nextStep
+                      ? `Continue to ${nextStep.stepLabel}`
+                      : "Complete workflow"}
+                </span>
+              </Button>
+            </div>
           </div>
         </section>
 

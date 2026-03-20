@@ -60,6 +60,26 @@ describe("starter workflow routes", () => {
     expect(
       await screen.findByRole("heading", { name: "Quote Identity" }),
     ).toBeInTheDocument();
+    expect(screen.getByTestId("workflow-step-footer")).toHaveClass(
+      "xl:grid",
+      "xl:grid-cols-[minmax(0,1fr)_auto]",
+    );
+    expect(screen.getByTestId("workflow-step-footer-actions")).toHaveClass(
+      "2xl:min-w-[320px]",
+    );
+    expect(screen.getByTestId("workflow-step-footer-actions")).toHaveClass(
+      "xl:justify-center",
+      "xl:min-w-[280px]",
+    );
+    expect(
+      screen.getByRole("button", { name: "Continue to Starter Scope" }),
+    ).toHaveClass("w-full", "sm:w-auto", "xl:min-w-[240px]", "2xl:min-w-[256px]");
+    const pageGrid = screen.getByRole("heading", { name: "Quote Identity" }).closest("div.space-y-5");
+
+    expect(pageGrid?.querySelector(".grid.gap-5")).toHaveClass(
+      "xl:grid-cols-[minmax(0,1fr)_320px]",
+      "2xl:grid-cols-[minmax(0,1fr)_360px]",
+    );
 
     await userEvent.type(
       screen.getByRole("textbox", { name: "Quote Year" }),

@@ -239,7 +239,7 @@ function MainLayoutShell(): ReactElement {
         </header>
 
         <main className="min-w-0 flex-1 p-4 lg:p-6">
-          <div className="mx-auto w-full max-w-[1400px]">
+          <div className="mx-auto w-full max-w-[1400px] 2xl:max-w-[1520px]">
             <Outlet />
           </div>
         </main>
@@ -253,7 +253,10 @@ function MainLayoutShell(): ReactElement {
  */
 export default function MainLayout(): ReactElement {
   return (
-    <SidebarProvider defaultOpen className="bg-background text-foreground">
+    <SidebarProvider
+      defaultOpen
+      className="bg-background text-foreground 2xl:[--sidebar-width:18rem]"
+    >
       <MainLayoutShell />
     </SidebarProvider>
   );
