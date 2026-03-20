@@ -169,6 +169,20 @@ export const CpqUiStateSchema = z.object({
 });
 
 /**
+ * Small persisted CPQ intake payload owned by the starter pre-configuration
+ * step. It stays intentionally narrow so template users can extend it without
+ * inheriting a large demo-specific data shape.
+ */
+export const StarterPreConfigurationSchema = z.object({
+  customer_name: z.string(),
+  collection_name: z.string(),
+  quote_year: z.string(),
+  sequence_code: z.string(),
+  item_name: z.string(),
+  confirmation_notes: z.string(),
+});
+
+/**
  * Root mocked CPQ workspace stored in localStorage.
  * Only mutable source data is persisted; workflow and dashboard summaries are
  * derived from this shape at read time.
@@ -178,6 +192,7 @@ export const CpqWorkspaceSchema = z.object({
   estimates: z.array(EstimateSchema).min(1),
   catalog: z.array(CatalogItemSchema).min(1),
   packages: z.array(CatalogPackageSchema).min(1),
+  starter_pre_configuration: StarterPreConfigurationSchema,
   ui: CpqUiStateSchema,
   active_estimate_id: z.string().min(1),
 });
@@ -196,6 +211,7 @@ export type UserRole = z.infer<typeof UserRoleSchema>;
 export type ThemeMode = z.infer<typeof ThemeModeSchema>;
 export type Estimate = z.infer<typeof EstimateSchema>;
 export type CpqUiState = z.infer<typeof CpqUiStateSchema>;
+export type StarterPreConfiguration = z.infer<typeof StarterPreConfigurationSchema>;
 export type CpqWorkspace = z.infer<typeof CpqWorkspaceSchema>;
 
 /**
@@ -265,21 +281,19 @@ const ESTIMATE_MODIFIER_VALUES: Record<Estimate["modifiers"][number], number> = 
 };
 
 /**
- * Ordered workflow step ids drive summary text and route targets.
+ * Shared starter defaults let newer page features tolerate older persisted
+ * localStorage payloads that predate the pre-configuration shape.
  */
-const CONFIGURE_WORKFLOW_STEP_IDS = new Set<string>(["equipment-selected"]);
-
-/**
- * Early account stages still belong on the dashboard route.
- */
-const DASHBOARD_WORKFLOW_STEP_IDS = new Set<string>([
-  "lead-created",
-  "discovery",
-  "converted",
-  "account-linked",
-  "region-assigned",
-  "billing-info",
-]);
+function createDefaultStarterPreConfiguration(): StarterPreConfiguration {
+  return {
+    customer_name: "",
+    collection_name: "",
+    quote_year: "",
+    sequence_code: "",
+    item_name: "",
+    confirmation_notes: "",
+  };
+}
 
 /**
  * Defines the static workflow skeleton used by the mock process controls.
@@ -287,99 +301,24 @@ const DASHBOARD_WORKFLOW_STEP_IDS = new Set<string>([
 function createBaseWorkflowSections(): WorkflowSection[] {
   return [
     {
-      id: "lead-capture",
-      title: "Lead Capture",
-      summary: "Completed",
-      state: "complete",
+      id: "pre-configuration",
+      title: "Pre-Configuration",
+      summary: "Step 1 of 4",
+      state: "current",
       icon_key: "capture",
       steps: [
-        { id: "lead-created", label: "Lead Created", state: "complete" },
         {
-          id: "discovery",
-          label: "Discovery / Qualification",
-          state: "complete",
-        },
-        {
-          id: "converted",
-          label: "Converted to Opportunity",
-          state: "complete",
-        },
-      ],
-    },
-    {
-      id: "account-opportunity",
-      title: "Account & Opportunity",
-      summary: "Completed",
-      state: "complete",
-      icon_key: "account",
-      steps: [
-        { id: "account-linked", label: "Account Linked", state: "complete" },
-        {
-          id: "region-assigned",
-          label: "Region / Rep Assigned",
-          state: "complete",
-        },
-        {
-          id: "billing-info",
-          label: "Billing Info Complete",
-          state: "complete",
-        },
-      ],
-    },
-    {
-      id: "proposal-build",
-      title: "Proposal Build",
-      summary: "Step 2 of 3",
-      state: "current",
-      icon_key: "proposal",
-      steps: [
-        {
-          id: "equipment-selected",
-          label: "Equipment Selected",
-          state: "complete",
-        },
-        {
-          id: "pricing-approved",
-          label: "Pricing Approved",
+          id: "customer-collection",
+          label: "Customer & Collection",
           state: "current",
         },
         {
-          id: "engineering-review",
-          label: "Engineering Review",
+          id: "year-sequence",
+          label: "Year & Sequence",
           state: "upcoming",
         },
-      ],
-    },
-    {
-      id: "proposal-delivered",
-      title: "Proposal Delivered",
-      summary: "Upcoming",
-      state: "upcoming",
-      icon_key: "delivery",
-      steps: [
-        { id: "proposal-sent", label: "Proposal Sent", state: "upcoming" },
-        {
-          id: "customer-reviewed",
-          label: "Customer Reviewed",
-          state: "upcoming",
-        },
-        { id: "po-received", label: "PO Received", state: "upcoming" },
-      ],
-    },
-    {
-      id: "project-commission",
-      title: "Project & Commission",
-      summary: "Upcoming",
-      state: "upcoming",
-      icon_key: "project",
-      steps: [
-        { id: "project-created", label: "Project Created", state: "upcoming" },
-        { id: "installed", label: "Installed", state: "upcoming" },
-        {
-          id: "commissioned",
-          label: "Commissioned",
-          state: "upcoming",
-        },
+        { id: "item-name", label: "Item Name", state: "upcoming" },
+        { id: "confirmation", label: "Confirmation", state: "upcoming" },
       ],
     },
   ];
@@ -392,45 +331,30 @@ export function createDefaultCpqWorkspace(): CpqWorkspace {
   return {
     account: {
       id: "acct-dr-inc",
-      name: "DR INC",
-      subtitle: "Account details and history",
-      status: "Active",
-      contact_person: "Dana Roberts",
-      email: "operations@drinc.example",
-      phone: "(555) 014-8821",
-      address: "1480 Ridgeway Dr, Chicago, IL",
-      notes: "Priority account with phased installs and regional approvals.",
+      name: "Starter Workspace",
+      subtitle: "Single-page CPQ starter",
+      status: "Draft",
+      contact_person: null,
+      email: null,
+      phone: null,
+      address: null,
+      notes: null,
     },
     estimates: [
       {
         id: "est-001002",
         estimate_number: "EST-001002",
-        account_name: "DR INC",
-        project_name: "Retro Brand Focal Walls",
-        revision_label: "4.0",
-        region: "International",
+        account_name: "Starter Workspace",
+        project_name: "Starter Configured Item",
+        revision_label: "1.0",
+        region: "Default",
         status: "draft",
-        workflow_stage: "Lead Created",
-        notes: "Priority estimate for a phased lobby refresh.",
+        workflow_stage: "Customer & Collection",
+        notes: "",
         intake_prompt: "",
-        build_selections: [
-          {
-            id: "sel-bundle-crane-package-1",
-            item_id: "item-under-running-sg",
-            quantity: 1,
-            source: "package",
-            package_id: "pkg-crane-package",
-          },
-        ],
-        modifiers: ["expedited", "freight"],
-        attachments: [
-          {
-            id: "att-submittal-001",
-            file_name: "submittal-package-v4.pdf",
-            kind: "Submittal",
-            added_at: "2026-03-17T14:15:00.000Z",
-          },
-        ],
+        build_selections: [],
+        modifiers: [],
+        attachments: [],
         updated_at: "2026-03-17T17:00:00.000Z",
       },
     ],
@@ -469,8 +393,9 @@ export function createDefaultCpqWorkspace(): CpqWorkspace {
         items: [{ item_id: "item-under-running-sg", quantity: 1 }],
       },
     ],
+    starter_pre_configuration: createDefaultStarterPreConfiguration(),
     ui: {
-      active_workflow_step_id: "lead-created",
+      active_workflow_step_id: "customer-collection",
       active_role: "admin",
       theme_mode: "light",
     },
@@ -542,24 +467,6 @@ export function getCurrentWorkflowStep(
     steps[0] ??
     null
   );
-}
-
-/**
- * Resolves which route should open when a workflow step is selected.
- */
-export function getWorkflowTargetHref(
-  stepId: string,
-  activeEstimateId: string,
-): string {
-  if (DASHBOARD_WORKFLOW_STEP_IDS.has(stepId)) {
-    return "/";
-  }
-
-  if (CONFIGURE_WORKFLOW_STEP_IDS.has(stepId)) {
-    return `/configure/${activeEstimateId}`;
-  }
-
-  return `/estimates/${activeEstimateId}`;
 }
 
 /**
@@ -757,6 +664,25 @@ export function formatPercent(value: number): string {
 }
 
 /**
+ * Keeps the starter quote code readable even before users fill every field.
+ */
+export function formatStarterQuoteCode(
+  starterPreConfiguration: StarterPreConfiguration | undefined,
+): string {
+  const resolvedStarterPreConfiguration =
+    starterPreConfiguration ?? createDefaultStarterPreConfiguration();
+  const yearToken =
+    resolvedStarterPreConfiguration.quote_year.trim().replace(/\s+/g, "") ||
+    "YYYY";
+  const sequenceToken =
+    resolvedStarterPreConfiguration.sequence_code
+      .trim()
+      .replace(/\s+/g, "") || "001";
+
+  return `EST-${yearToken}-${sequenceToken.toUpperCase()}`;
+}
+
+/**
  * Viewer mode deliberately hides price data instead of pretending the value is
  * absent, which makes the role switch meaningful during demos.
  */
@@ -913,7 +839,10 @@ export function advanceWorkflowInWorkspace(
   const activeIndex = orderedSteps.findIndex(
     (step) => step.stepId === workspace.ui.active_workflow_step_id,
   );
-  const nextStep = orderedSteps[Math.min(activeIndex + 1, orderedSteps.length - 1)];
+  const nextStep =
+    activeIndex >= 0 && activeIndex < orderedSteps.length - 1
+      ? orderedSteps[activeIndex + 1]
+      : null;
 
   if (!nextStep) {
     return workspace;
@@ -1103,6 +1032,53 @@ export function updateAccountFieldInWorkspace(
 }
 
 /**
+ * Persists the narrow starter pre-configuration form and mirrors the most
+ * important CPQ identifiers back into the seeded account and estimate records.
+ */
+export function updateStarterPreConfigurationFieldInWorkspace(
+  workspace: CpqWorkspace,
+  field: keyof StarterPreConfiguration,
+  value: string,
+): CpqWorkspace {
+  const nextStarterPreConfiguration: StarterPreConfiguration = {
+    ...createDefaultStarterPreConfiguration(),
+    ...workspace.starter_pre_configuration,
+    [field]: value,
+  };
+  const nextCustomerName =
+    nextStarterPreConfiguration.customer_name.trim() || "Starter Workspace";
+  const nextCollectionName =
+    nextStarterPreConfiguration.collection_name.trim() || "Single-page CPQ starter";
+  const nextItemName =
+    nextStarterPreConfiguration.item_name.trim() || "Starter Configured Item";
+  const nextQuoteCode = formatStarterQuoteCode(nextStarterPreConfiguration);
+  const nextConfirmationNotes = nextStarterPreConfiguration.confirmation_notes;
+
+  return {
+    ...workspace,
+    starter_pre_configuration: nextStarterPreConfiguration,
+    account: {
+      ...workspace.account,
+      name: nextCustomerName,
+      subtitle: nextCollectionName,
+      notes: nextConfirmationNotes.trim().length > 0 ? nextConfirmationNotes : null,
+    },
+    estimates: workspace.estimates.map((estimate) =>
+      estimate.id === workspace.active_estimate_id
+        ? {
+            ...estimate,
+            estimate_number: nextQuoteCode,
+            account_name: nextCustomerName,
+            project_name: nextItemName,
+            notes: nextConfirmationNotes,
+            updated_at: new Date().toISOString(),
+          }
+        : estimate,
+    ),
+  };
+}
+
+/**
  * Updates the narrative estimate note shown on the workspace and quote tabs.
  */
 export function updateEstimateNotesInWorkspace(
@@ -1188,13 +1164,13 @@ export function createDivisionInWorkspace(
     account_name: workspace.account.name,
     project_name: `Division ${nextIndex} Expansion`,
     revision_label: "1.0",
-    region: "International",
+    region: "Default",
     status: "draft",
-    workflow_stage: "Equipment Selected",
-    notes: "New division created from the dashboard.",
+    workflow_stage: "Customer & Collection",
+    notes: "Starter record created from the shell reset/test utilities.",
     intake_prompt: "",
     build_selections: [],
-    modifiers: ["freight"],
+    modifiers: [],
     attachments: [],
     updated_at: new Date().toISOString(),
   };
@@ -1206,7 +1182,7 @@ export function createDivisionInWorkspace(
       active_estimate_id: estimateId,
       ui: {
         ...workspace.ui,
-        active_workflow_step_id: "equipment-selected",
+        active_workflow_step_id: "customer-collection",
       },
     },
     estimateId,

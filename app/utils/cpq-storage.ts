@@ -16,10 +16,12 @@ import {
   type AccountSummary,
   type CpqWorkspace,
   type EstimateStatus,
+  type StarterPreConfiguration,
   type UserRole,
   updateAccountFieldInWorkspace,
   updateEstimateIntakePromptInWorkspace,
   updateEstimateNotesInWorkspace,
+  updateStarterPreConfigurationFieldInWorkspace,
   updateEstimateStatusInWorkspace,
   updateSelectionQuantityInWorkspace,
 } from "../lib/cpq-data";
@@ -91,6 +93,10 @@ interface UseCpqWorkspaceStorageResult {
       AccountSummary,
       "contact_person" | "email" | "phone" | "address" | "notes"
     >,
+    value: string,
+  ) => void;
+  updateStarterPreConfigurationField: (
+    field: keyof StarterPreConfiguration,
     value: string,
   ) => void;
   createDivision: () => string;
@@ -328,6 +334,22 @@ export function useCpqWorkspaceStorage(): UseCpqWorkspaceStorageResult {
   };
 
   /**
+   * Persists the starter page CPQ inputs that power the single-page template.
+   */
+  const updateStarterPreConfigurationField = (
+    field: keyof StarterPreConfiguration,
+    value: string,
+  ): void => {
+    commitWorkspaceUpdate((currentWorkspace) =>
+      updateStarterPreConfigurationFieldInWorkspace(
+        currentWorkspace,
+        field,
+        value,
+      ),
+    );
+  };
+
+  /**
    * Creates a new mocked division/opportunity pair and returns its estimate id.
    */
   const createDivision = (): string => {
@@ -402,6 +424,7 @@ export function useCpqWorkspaceStorage(): UseCpqWorkspaceStorageResult {
     addMockAttachment,
     removeAttachment,
     updateAccountField,
+    updateStarterPreConfigurationField,
     createDivision,
     setActiveEstimate,
     setActiveWorkflowStep,

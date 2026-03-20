@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import MainLayout from "../../../app/layouts/MainLayout";
@@ -16,8 +16,6 @@ function createLayoutRouter(initialEntries: string[]): ReturnType<typeof createM
         element: <MainLayout />,
         children: [
           { index: true, element: <div>Dashboard body</div> },
-          { path: "estimates/:estimateId", element: <div>Estimate body</div> },
-          { path: "configure/:estimateId", element: <div>Configure body</div> },
         ],
       },
     ],
@@ -88,27 +86,41 @@ describe("main layout", () => {
 
     expect(await screen.findByText("Customware CPQ")).toBeInTheDocument();
     expect(screen.getByText("Workflow")).toBeInTheDocument();
-    expect(screen.getByText("0 of 15 steps")).toBeInTheDocument();
+    expect(screen.getByText("0 of 4 steps")).toBeInTheDocument();
     expect(screen.getByText("0%")).toBeInTheDocument();
-    expect(screen.getByText("Lead Capture")).toBeInTheDocument();
-    expect(screen.getByText("Step 1 of 3")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Lead Created" })).toHaveAttribute(
-      "aria-current",
-      "step",
+    expect(screen.getByRole("button", { name: /Pre-Configuration/i })).toHaveAttribute(
+      "aria-expanded",
+      "true",
     );
-    expect(screen.getAllByRole("link", { name: "Dashboard" })).toHaveLength(2);
-    expect(screen.getAllByRole("link", { name: "Estimates" })).toHaveLength(2);
-    expect(screen.getAllByRole("link", { name: "Configure" })).toHaveLength(2);
+    expect(screen.getByText("Step 1 of 4")).toBeInTheDocument();
+    expect(
+      screen.getByText("Customer & Collection").closest("[aria-current='step']"),
+    ).not.toBeNull();
     expect(screen.getByText("Dashboard body")).toBeInTheDocument();
   });
 
-  it("navigates to the configure route from the workflow rail", async () => {
+  it("collapses and expands the workflow section without navigating", async () => {
     const router = createLayoutRouter(["/"]);
     render(<RouterProvider router={router} />);
 
-    await userEvent.click(screen.getByRole("button", { name: "Equipment Selected" }));
+    const sectionToggle = screen.getByRole("button", { name: /Pre-Configuration/i });
+    const sectionContent = document.getElementById(
+      sectionToggle.getAttribute("aria-controls") ?? "",
+    );
 
-    expect(await screen.findByText("Configure body")).toBeInTheDocument();
+    expect(screen.getByText("Customer & Collection")).toBeInTheDocument();
+
+    await userEvent.click(sectionToggle);
+
+    expect(sectionToggle).toHaveAttribute("aria-expanded", "false");
+    expect(sectionContent).toHaveAttribute("hidden");
+    expect(screen.getByText("Dashboard body")).toBeInTheDocument();
+
+    await userEvent.click(sectionToggle);
+
+    expect(sectionToggle).toHaveAttribute("aria-expanded", "true");
+    expect(sectionContent).not.toHaveAttribute("hidden");
+    expect(screen.getByText("Customer & Collection")).toBeInTheDocument();
   });
 
   it("collapses and restores the desktop workflow sidebar", async () => {
@@ -134,7 +146,7 @@ describe("main layout", () => {
     expect(sidebarRoot).toHaveAttribute("data-state", "expanded");
   });
 
-  it("closes the mobile workflow sheet after selecting a workflow step", async () => {
+  it("keeps the mobile workflow drawer open while toggling a section", async () => {
     setViewportWidth(390);
     const router = createLayoutRouter(["/"]);
     render(<RouterProvider router={router} />);
@@ -145,15 +157,19 @@ describe("main layout", () => {
 
     expect(await screen.findByRole("dialog", { name: "Sidebar" })).toBeInTheDocument();
 
-    const workflowButtons = screen.getAllByRole("button", {
-      name: "Equipment Selected",
+    const sidebarDialog = await screen.findByRole("dialog", { name: "Sidebar" });
+    const sectionToggle = within(sidebarDialog).getByRole("button", {
+      name: /Pre-Configuration/i,
     });
-    const mobileWorkflowButton = workflowButtons[workflowButtons.length - 1];
+    const sectionContent = document.getElementById(
+      sectionToggle.getAttribute("aria-controls") ?? "",
+    );
 
-    await userEvent.click(mobileWorkflowButton!);
+    await userEvent.click(sectionToggle);
 
-    expect(await screen.findByText("Configure body")).toBeInTheDocument();
-    expect(screen.queryByRole("dialog", { name: "Sidebar" })).not.toBeInTheDocument();
+    expect(sectionToggle).toHaveAttribute("aria-expanded", "false");
+    expect(sectionContent).toHaveAttribute("hidden");
+    expect(screen.getByRole("dialog", { name: "Sidebar" })).toBeInTheDocument();
   });
 
   it("toggles the persisted theme mode from the header control", async () => {

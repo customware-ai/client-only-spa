@@ -1,29 +1,49 @@
 import { expect, test } from "@playwright/test";
 import { seedWorkspace } from "./support/cpq";
 
-test.describe("cpq shell controls e2e", () => {
-  test("hides and restores the desktop workflow sidebar", async ({ page }) => {
+test.describe("workflow starter shell e2e", () => {
+  test("hides and restores the desktop workflow sidebar while keeping section toggles local", async ({
+    page,
+  }) => {
     await page.goto("/");
     await page.setViewportSize({ width: 1280, height: 800 });
     await seedWorkspace(page);
     await page.reload();
-    await expect(page.getByText("Workflow")).toBeVisible();
-    await expect(page.getByText("0 of 15 steps")).toBeVisible();
-    await expect(page.getByText("0%")).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Lead Created" }),
-    ).toHaveAttribute("aria-current", "step");
+
+    await expect(page.locator('[aria-label="Workflow"]').first()).toBeVisible();
+    await expect(page.getByText("0 of 4 steps")).toBeVisible();
+
+    const sectionToggle = page
+      .getByRole("button", { name: /Pre-Configuration/i })
+      .first();
+    const sectionContent = page.locator(
+      `#${await sectionToggle.getAttribute("aria-controls")}`,
+    );
+    const railStepLabel = page
+      .locator('[aria-label="Workflow"]')
+      .first()
+      .getByText("Customer & Collection");
     const sidebarGap = page.locator('[data-slot="sidebar-gap"]').first();
     const sidebarContainer = page.locator('[data-slot="sidebar-container"]').first();
 
+    await expect(sectionToggle).toHaveAttribute("aria-expanded", "true");
+    await expect(railStepLabel).toBeVisible();
     await expect(sidebarGap).toHaveCSS("width", "256px");
     await expect(sidebarContainer).toHaveCSS("left", "0px");
+
+    await sectionToggle.click();
+
+    await expect(sectionToggle).toHaveAttribute("aria-expanded", "false");
+    await expect(sectionContent).toBeHidden();
+    await expect(page).toHaveURL(/\/$/);
 
     await page.getByRole("button", { name: "Toggle workflow sidebar" }).click();
 
     await expect(sidebarGap).toHaveCSS("width", "0px");
     await expect(sidebarContainer).toHaveCSS("left", "-256px");
-    await expect(page.getByRole("heading", { name: "DR INC" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Customer and collection context" }),
+    ).toBeVisible();
 
     await page.getByRole("button", { name: "Toggle workflow sidebar" }).click();
 
@@ -34,10 +54,6 @@ test.describe("cpq shell controls e2e", () => {
   test("renders dark mode with neutral shell colors on desktop and mobile", async ({
     page,
   }) => {
-    /**
-     * The shell colors come from a mix of CSS variables and dark-only utility
-     * classes, so the regression check reads the actual rendered values.
-     */
     const readShellColors = async (): Promise<{
       isDark: boolean;
       shellBackground: string | null;
@@ -47,7 +63,7 @@ test.describe("cpq shell controls e2e", () => {
       page.evaluate(() => {
         const shell = document.querySelector(".min-h-screen.bg-background");
         const header = document.querySelector("header");
-        const card = document.querySelector("section.rounded-xl");
+        const card = document.querySelector("main section");
 
         return {
           isDark: document.documentElement.classList.contains("dark"),
@@ -86,29 +102,18 @@ test.describe("cpq shell controls e2e", () => {
     expect(mobileColors.headerBackground).toBe("rgb(34, 34, 37)");
   });
 
-  test("supports division creation and temporary read-only role preview", async ({
+  test("keeps the starter page read-only during temporary role preview", async ({
     page,
   }) => {
     await page.goto("/");
     await seedWorkspace(page);
     await page.reload();
 
-    await page.getByRole("button", { name: "Add Division" }).click();
+    const ownerInput = page.getByRole("textbox", { name: "Customer" });
+    const notesInput = page.getByRole("textbox", { name: "Confirmation Notes" });
 
-    await expect(page).toHaveURL(/\/configure\/est-/);
-    await expect(
-      page.getByText("Add packages or products to start the build."),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("textbox", { name: "Filter build options" }),
-    ).toBeVisible();
-    await expect(page.getByText("What do you need?")).toHaveCount(0);
-
-    await page.getByRole("navigation").getByRole("link", { name: "Dashboard" }).click();
-
-    await expect(
-      page.getByRole("heading", { name: "Opportunities (2)" }),
-    ).toBeVisible();
+    await expect(ownerInput).toBeEnabled();
+    await expect(notesInput).toBeEnabled();
 
     await page.getByRole("button", { name: "View as Role" }).click();
     await page.getByRole("combobox").click();
@@ -117,32 +122,24 @@ test.describe("cpq shell controls e2e", () => {
     await expect(page.getByText("Active role: viewer")).toBeVisible();
     await page.keyboard.press("Escape");
 
-    await page.getByRole("link", { name: /Retro Brand Focal Walls/ }).click();
-
     await expect(
-      page.getByRole("button", { name: "Approval Role Required" }),
-    ).toBeDisabled();
-
-    await page.getByRole("link", { name: "Open Configure" }).click();
-
-    await expect(
-      page.getByText("viewer role is read-only", { exact: false }),
+      page.getByText("viewer role can review this starter quote", { exact: false }),
     ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Read Only" }).first(),
-    ).toBeDisabled();
-    await expect(page.getByLabel("Build total")).toHaveText("Hidden");
+    await expect(ownerInput).toBeDisabled();
+    await expect(notesInput).toBeDisabled();
 
     await page.reload();
 
     await expect(
-      page.getByText("viewer role is read-only", { exact: false }),
+      page.getByText("viewer role can review this starter quote", {
+        exact: false,
+      }),
     ).toHaveCount(0);
-    await expect(page.getByLabel("Build total")).not.toHaveText("Hidden");
-    await expect(page.getByRole("button", { name: "Add" }).first()).toBeEnabled();
+    await expect(ownerInput).toBeEnabled();
+    await expect(notesInput).toBeEnabled();
   });
 
-  test("closes the mobile workflow drawer after selecting a step", async ({
+  test("keeps the mobile workflow drawer open while toggling a section", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
@@ -152,15 +149,21 @@ test.describe("cpq shell controls e2e", () => {
 
     await page.getByRole("button", { name: "Toggle workflow sidebar" }).click();
 
-    await expect(page.getByRole("dialog", { name: "Sidebar" })).toBeVisible();
+    const sidebarDialog = page.getByRole("dialog", { name: "Sidebar" });
 
-    await page
-      .getByRole("dialog", { name: "Sidebar" })
-      .getByRole("button", { name: "Equipment Selected" })
-      .click();
+    await expect(sidebarDialog).toBeVisible();
 
-    await expect(page).toHaveURL(/\/configure\/est-001002$/);
-    await expect(page.getByRole("heading", { name: "Configure" })).toBeVisible();
-    await expect(page.getByRole("dialog", { name: "Sidebar" })).toHaveCount(0);
+    const sectionToggle = sidebarDialog.getByRole("button", {
+      name: /Pre-Configuration/i,
+    });
+    const sectionContent = sidebarDialog.locator(
+      `#${await sectionToggle.getAttribute("aria-controls")}`,
+    );
+
+    await sectionToggle.click();
+
+    await expect(sectionToggle).toHaveAttribute("aria-expanded", "false");
+    await expect(sectionContent).toBeHidden();
+    await expect(sidebarDialog).toBeVisible();
   });
 });

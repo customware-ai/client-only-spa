@@ -1,69 +1,46 @@
 import { expect, test } from "@playwright/test";
 import { seedWorkspace } from "./support/cpq";
 
-test.describe("cpq workspace e2e", () => {
-  test("keeps the mocked CPQ workflow interactive and persisted", async ({
+test.describe("workflow starter workspace e2e", () => {
+  test("persists the CPQ starter inputs and scope while keeping workflow expansion local", async ({
     page,
   }) => {
     await page.goto("/");
     await seedWorkspace(page);
     await page.reload();
 
-    await expect(page.getByRole("heading", { name: "DR INC" })).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Opportunities (1)" }),
+      page.getByRole("heading", { name: "Customer and collection context" }),
     ).toBeVisible();
 
-    await page
-      .getByRole("textbox", { name: "Contact Person" })
-      .fill("Morgan Lee");
+    const customerInput = page.getByRole("textbox", { name: "Customer" });
+    const itemNameInput = page.getByRole("textbox", { name: "Item Name" });
+    const sectionToggle = page
+      .getByRole("button", { name: /Pre-Configuration/i })
+      .first();
+    const sectionContent = page.locator(
+      `#${await sectionToggle.getAttribute("aria-controls")}`,
+    );
 
-    await page.getByRole("button", { name: "Equipment Selected" }).click();
+    await customerInput.fill("BarkBilt");
+    await page.getByRole("textbox", { name: "Collection" }).fill("Industrial Hoists");
+    await page.getByRole("textbox", { name: "Quote Year" }).fill("2026");
+    await page.getByRole("textbox", { name: "Sequence" }).fill("014");
+    await itemNameInput.fill("Under Running Crane");
+    await page.getByRole("button", { name: "Load Starter Package" }).click();
 
-    await expect(page.getByRole("heading", { name: "Configure" })).toBeVisible();
+    await sectionToggle.click();
 
-    const totalLocator = page
-      .locator("section")
-      .filter({ hasText: "Build" })
-      .getByText(/^\$/)
-      .last();
-    const totalBefore = await totalLocator.textContent();
-
-    await page
-      .locator("section")
-      .filter({ hasText: "Inspection Plan" })
-      .getByRole("button", { name: "Add" })
-      .click();
-
-    await expect(
-      page
-        .getByRole("complementary")
-        .filter({ hasText: "Build" })
-        .getByText("Inspection Plan"),
-    ).toBeVisible();
-
-    const totalAfter = await totalLocator.textContent();
-    expect(totalAfter).not.toBe(totalBefore);
-
-    await page.getByRole("link", { name: "Continue to Quote" }).click();
-
-    await expect(
-      page.getByRole("heading", { name: "EST-001002" }),
-    ).toBeVisible();
-
-    await page.getByRole("button", { name: "Files" }).click();
-    await page.getByRole("button", { name: "Add Mock File" }).click();
-
-    await expect(page.getByText("mock-file-2.pdf")).toBeVisible();
+    await expect(sectionToggle).toHaveAttribute("aria-expanded", "false");
+    await expect(sectionContent).toBeHidden();
 
     await page.reload();
 
-    await expect(page.getByText("mock-file-2.pdf")).toBeVisible();
-
-    await page.goto("/");
-
-    await expect(page.getByRole("textbox", { name: "Contact Person" })).toHaveValue(
-      "Morgan Lee",
-    );
+    await expect(customerInput).toHaveValue("BarkBilt");
+    await expect(itemNameInput).toHaveValue("Under Running Crane");
+    await expect(page.getByText("EST-2026-014")).toBeVisible();
+    await expect(page.getByText("Under Running SG", { exact: true })).toBeVisible();
+    await expect(sectionToggle).toHaveAttribute("aria-expanded", "true");
+    await expect(sectionContent).toBeVisible();
   });
 });

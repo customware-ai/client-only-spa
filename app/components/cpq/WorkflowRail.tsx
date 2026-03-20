@@ -1,5 +1,4 @@
-import type { ReactElement } from "react";
-import { useNavigate } from "react-router";
+import { useEffect, useState, type ReactElement } from "react";
 import {
   BriefcaseBusiness,
   ChevronRight,
@@ -10,11 +9,9 @@ import {
 } from "lucide-react";
 import { Button } from "../ui/Button";
 import {
-  getCurrentWorkflowStep,
   getWorkflowProgress,
   getWorkflowSections,
   getWorkflowStepMetas,
-  getWorkflowTargetHref,
   type CpqWorkspace,
   type WorkflowSection,
   type WorkflowState,
@@ -24,9 +21,7 @@ import { cn } from "../../lib/utils";
 interface WorkflowRailProps {
   workspace: CpqWorkspace;
   className?: string;
-  onSelectStep: (stepId: string) => void;
   onAdvance: () => void;
-  onNavigate?: () => void;
 }
 
 /**
@@ -85,25 +80,58 @@ function getStepDotTone(state: WorkflowState): string {
 export function WorkflowRail({
   workspace,
   className,
-  onSelectStep,
   onAdvance,
-  onNavigate,
 }: WorkflowRailProps): ReactElement {
-  const navigate = useNavigate();
   const progress = getWorkflowProgress(workspace);
   const workflowSections = getWorkflowSections(workspace);
-  const currentWorkflowStep = getCurrentWorkflowStep(workspace);
   const orderedSteps = getWorkflowStepMetas(workspace);
+  const currentSectionId =
+    workflowSections.find((section) => section.state === "current")?.id ??
+    workflowSections[0]?.id ??
+    null;
+  const workflowSectionIds = workflowSections.map((section) => section.id).join("|");
+  const [expandedSectionIds, setExpandedSectionIds] = useState<Set<string>>(
+    () =>
+      new Set(
+        workflowSections
+          .filter((section) => section.state === "current")
+          .map((section) => section.id),
+      ),
+  );
 
   /**
-   * Selecting a step updates the mock workflow state and takes the user to the
-   * route that best matches that step.
+   * Keep the current section expanded as workflow data changes while dropping
+   * ids that no longer exist in the seeded process definition.
    */
-  const handleSelectStep = (stepId: string): void => {
-    onSelectStep(stepId);
-    onNavigate?.();
-    void navigate(getWorkflowTargetHref(stepId, workspace.active_estimate_id));
-  };
+  useEffect((): void => {
+    setExpandedSectionIds((currentExpandedSectionIds) => {
+      const nextExpandedSectionIds = new Set<string>();
+      const visibleSectionIds = new Set(
+        workflowSectionIds ? workflowSectionIds.split("|") : [],
+      );
+
+      for (const sectionId of currentExpandedSectionIds) {
+        if (visibleSectionIds.has(sectionId)) {
+          nextExpandedSectionIds.add(sectionId);
+        }
+      }
+
+      if (currentSectionId && nextExpandedSectionIds.size === 0) {
+        nextExpandedSectionIds.add(currentSectionId);
+      }
+
+      if (
+        nextExpandedSectionIds.size === currentExpandedSectionIds.size &&
+        Array.from(nextExpandedSectionIds).every((sectionId) =>
+          currentExpandedSectionIds.has(sectionId),
+        )
+      ) {
+        return currentExpandedSectionIds;
+      }
+
+      return nextExpandedSectionIds;
+    });
+  }, [currentSectionId, workflowSectionIds]);
 
   /**
    * The advance action mirrors a "next step" workflow control.
@@ -112,27 +140,32 @@ export function WorkflowRail({
     const activeStepIndex = orderedSteps.findIndex(
       (step) => step.stepId === workspace.ui.active_workflow_step_id,
     );
-    const nextStep =
-      orderedSteps[Math.min(activeStepIndex + 1, orderedSteps.length - 1)];
+    const hasNextStep =
+      activeStepIndex >= 0 && activeStepIndex < orderedSteps.length - 1;
 
-    onAdvance();
-    onNavigate?.();
-
-    if (nextStep) {
-      void navigate(
-        getWorkflowTargetHref(nextStep.stepId, workspace.active_estimate_id),
-      );
+    if (!hasNextStep) {
       return;
     }
 
-    if (currentWorkflowStep) {
-      void navigate(
-        getWorkflowTargetHref(
-          currentWorkflowStep.stepId,
-          workspace.active_estimate_id,
-        ),
-      );
-    }
+    onAdvance();
+  };
+
+  /**
+   * Sections expand and collapse locally so the starter demonstrates structure
+   * without implying a required route-per-step template.
+   */
+  const toggleSection = (sectionId: string): void => {
+    setExpandedSectionIds((currentExpandedSectionIds) => {
+      const nextExpandedSectionIds = new Set(currentExpandedSectionIds);
+
+      if (nextExpandedSectionIds.has(sectionId)) {
+        nextExpandedSectionIds.delete(sectionId);
+      } else {
+        nextExpandedSectionIds.add(sectionId);
+      }
+
+      return nextExpandedSectionIds;
+    });
   };
 
   return (
@@ -154,7 +187,12 @@ export function WorkflowRail({
               <span>Workflow</span>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleAdvance}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleAdvance}
+            disabled={orderedSteps.length <= 1}
+          >
             <span>Advance</span>
           </Button>
         </div>
@@ -175,17 +213,16 @@ export function WorkflowRail({
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
         <div className="space-y-3">
           {workflowSections.map((section) => {
-            const sectionStepTarget =
-              section.steps.find((step) => step.state === "current")?.id ??
-              section.steps[0]?.id;
+            const isExpanded = expandedSectionIds.has(section.id);
+            const sectionContentId = `workflow-section-${section.id}`;
 
             return (
               <section key={section.id}>
                 <button
                   type="button"
-                  onClick={() =>
-                    sectionStepTarget ? handleSelectStep(sectionStepTarget) : undefined
-                  }
+                  onClick={() => toggleSection(section.id)}
+                  aria-expanded={isExpanded}
+                  aria-controls={sectionContentId}
                   className={cn(
                     "w-full rounded-lg border px-3 py-3 text-left transition-colors duration-150 hover:border-stone-300 hover:bg-white dark:hover:border-zinc-700 dark:hover:bg-zinc-900",
                     getSectionTone(section.state),
@@ -203,25 +240,32 @@ export function WorkflowRail({
                         {section.summary}
                       </div>
                     </div>
-                    <ChevronRight className="mt-0.5 h-4 w-4 text-stone-400 dark:text-zinc-500" />
+                    <ChevronRight
+                      className={cn(
+                        "mt-0.5 h-4 w-4 text-stone-400 transition-transform duration-150 dark:text-zinc-500",
+                        isExpanded && "rotate-90",
+                      )}
+                    />
                   </div>
                 </button>
 
-                <ol className="mt-3 space-y-1 pl-4">
+                <ol
+                  id={sectionContentId}
+                  hidden={!isExpanded}
+                  className="mt-3 space-y-1 pl-4"
+                >
                   {section.steps.map((step) => {
                     const isActiveStep =
                       step.id === workspace.ui.active_workflow_step_id;
 
                     return (
                       <li key={step.id}>
-                        <button
-                          type="button"
-                          onClick={() => handleSelectStep(step.id)}
+                        <div
+                          aria-current={isActiveStep ? "step" : undefined}
                           className={cn(
-                            "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors duration-150 hover:bg-stone-100 dark:hover:bg-zinc-900",
+                            "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm",
                             isActiveStep && "bg-stone-100 dark:bg-zinc-900",
                           )}
-                          aria-current={isActiveStep ? "step" : undefined}
                         >
                           <span
                             className={cn(
@@ -239,7 +283,7 @@ export function WorkflowRail({
                           >
                             {step.label}
                           </span>
-                        </button>
+                        </div>
                       </li>
                     );
                   })}

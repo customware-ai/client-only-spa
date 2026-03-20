@@ -1,15 +1,13 @@
 /**
  * Route Configuration
  *
- * Simplified SPA routes for the CPQ dashboard, estimate workspace, and
- * configurator experience.
+ * Simplified SPA routes for the single-page workflow starter.
  */
 
 import {
   type RouteConfig,
   index,
   layout,
-  route,
 } from "@react-router/dev/routes";
 import { attachGlobalFrontendErrorHandlers } from "./utils/error-logger";
 
@@ -28,7 +26,5 @@ attachGlobalFrontendErrorHandlers({ endpoint: "/logs" });
 export default [
   layout("layouts/MainLayout.tsx", [
     index("routes/index.tsx"),
-    route("estimates/:estimateId", "routes/estimates.$estimateId.tsx"),
-    route("configure/:estimateId", "routes/configure.$estimateId.tsx"),
   ]),
 ] satisfies RouteConfig;

@@ -54,12 +54,41 @@ describe("useCpqWorkspaceStorage", () => {
     const { result } = renderHook(() => useCpqWorkspaceStorage());
 
     await act(async () => {
-      result.current.setActiveWorkflowStep("proposal-sent");
+      result.current.setActiveWorkflowStep("customer-collection");
       result.current.toggleThemeMode();
     });
 
-    expect(result.current.workspace.ui.active_workflow_step_id).toBe("proposal-sent");
+    expect(result.current.workspace.ui.active_workflow_step_id).toBe(
+      "customer-collection",
+    );
     expect(result.current.workspace.ui.theme_mode).toBe("dark");
+  });
+
+  it("persists starter pre-configuration fields into workspace storage", async () => {
+    const { result } = renderHook(() => useCpqWorkspaceStorage());
+
+    await act(async () => {
+      result.current.updateStarterPreConfigurationField("customer_name", "BarkBilt");
+      result.current.updateStarterPreConfigurationField("quote_year", "2026");
+      result.current.updateStarterPreConfigurationField("sequence_code", "014");
+    });
+
+    expect(result.current.workspace.starter_pre_configuration.customer_name).toBe(
+      "BarkBilt",
+    );
+    expect(result.current.workspace.estimates[0]?.estimate_number).toBe(
+      "EST-2026-014",
+    );
+
+    const storedWorkspace = JSON.parse(
+      window.localStorage.getItem(CPQ_WORKSPACE_STORAGE_KEY) ?? "null",
+    ) as {
+      starter_pre_configuration: { customer_name: string };
+      estimates: Array<{ estimate_number: string }>;
+    };
+
+    expect(storedWorkspace.starter_pre_configuration.customer_name).toBe("BarkBilt");
+    expect(storedWorkspace.estimates[0]?.estimate_number).toBe("EST-2026-014");
   });
 
   it("creates a new mocked division and returns its estimate id", async () => {
