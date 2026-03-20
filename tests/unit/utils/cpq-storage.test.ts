@@ -50,17 +50,20 @@ describe("useCpqWorkspaceStorage", () => {
     expect(result.current.workspace.estimates[0]?.status).toBe("draft");
   });
 
-  it("updates workflow and theme state", async () => {
+  it("advances workflow state across stages and marks the starter complete", async () => {
     const { result } = renderHook(() => useCpqWorkspaceStorage());
 
     await act(async () => {
-      result.current.setActiveWorkflowStep("customer-collection");
+      result.current.advanceWorkflow();
+      result.current.advanceWorkflow();
+      result.current.advanceWorkflow();
       result.current.toggleThemeMode();
     });
 
     expect(result.current.workspace.ui.active_workflow_step_id).toBe(
-      "customer-collection",
+      "starter-scope",
     );
+    expect(result.current.workspace.ui.workflow_completed).toBe(true);
     expect(result.current.workspace.ui.theme_mode).toBe("dark");
   });
 

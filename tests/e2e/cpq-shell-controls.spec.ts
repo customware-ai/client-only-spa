@@ -16,7 +16,8 @@ test.describe("workflow starter shell e2e", () => {
     await expect(logoMark).toBeVisible();
     await expect(page.getByRole("link", { name: "Workspace" }).first()).toBeVisible();
     await expect(page.locator('[aria-label="Workflow"]').first()).toBeVisible();
-    await expect(page.getByText("0 of 4 steps")).toBeVisible();
+    await expect(page.getByText("0 of 3 steps")).toBeVisible();
+    await expect(page).toHaveURL(/\/workflow\/customer-collection$/);
 
     const logoStyles = await logoMark.evaluate((node) => {
       const mark =
@@ -62,6 +63,10 @@ test.describe("workflow starter shell e2e", () => {
 
     await expect(sectionToggle).toHaveAttribute("aria-expanded", "true");
     await expect(railStepLabel).toBeVisible();
+    await expect(sectionToggle).toContainText("Step 1 of 2");
+    await expect(
+      page.getByRole("button", { name: /Scope & Review/i }).first(),
+    ).toContainText("Upcoming");
     await expect(sidebarGap).toHaveCSS("width", "256px");
     await expect(sidebarContainer).toHaveCSS("left", "0px");
 
@@ -69,14 +74,23 @@ test.describe("workflow starter shell e2e", () => {
 
     await expect(sectionToggle).toHaveAttribute("aria-expanded", "false");
     await expect(sectionContent).toBeHidden();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/workflow\/customer-collection$/);
+
+    await sectionToggle.click();
+    await page
+      .locator('[aria-label="Workflow"]')
+      .first()
+      .getByRole("button", { name: "Quote Identity", exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/workflow\/quote-identity$/);
+    await expect(page.getByRole("heading", { name: "Quote Identity" })).toBeVisible();
 
     await page.getByRole("button", { name: "Toggle workflow sidebar" }).click();
 
     await expect(sidebarGap).toHaveCSS("width", "0px");
     await expect(sidebarContainer).toHaveCSS("left", "-256px");
     await expect(
-      page.getByRole("heading", { name: "Customer and collection context" }),
+      page.getByRole("heading", { name: "Quote Identity" }),
     ).toBeVisible();
 
     await page.getByRole("button", { name: "Toggle workflow sidebar" }).click();
@@ -144,10 +158,10 @@ test.describe("workflow starter shell e2e", () => {
     await page.reload();
 
     const ownerInput = page.getByRole("textbox", { name: "Customer" });
-    const notesInput = page.getByRole("textbox", { name: "Confirmation Notes" });
+    const collectionInput = page.getByRole("textbox", { name: "Collection" });
 
     await expect(ownerInput).toBeEnabled();
-    await expect(notesInput).toBeEnabled();
+    await expect(collectionInput).toBeEnabled();
 
     await page.getByRole("button", { name: "View as Role" }).click();
     await page.getByRole("combobox").click();
@@ -157,23 +171,23 @@ test.describe("workflow starter shell e2e", () => {
     await page.keyboard.press("Escape");
 
     await expect(
-      page.getByText("viewer role can review this starter quote", { exact: false }),
+      page.getByText("viewer can review this starter workflow", { exact: false }),
     ).toBeVisible();
     await expect(ownerInput).toBeDisabled();
-    await expect(notesInput).toBeDisabled();
+    await expect(collectionInput).toBeDisabled();
 
     await page.reload();
 
     await expect(
-      page.getByText("viewer role can review this starter quote", {
+      page.getByText("viewer can review this starter workflow", {
         exact: false,
       }),
     ).toHaveCount(0);
     await expect(ownerInput).toBeEnabled();
-    await expect(notesInput).toBeEnabled();
+    await expect(collectionInput).toBeEnabled();
   });
 
-  test("keeps the mobile workflow drawer open while toggling a section", async ({
+  test("closes the mobile workflow drawer after selecting a step", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
@@ -188,17 +202,10 @@ test.describe("workflow starter shell e2e", () => {
 
     await expect(sidebarDialog).toBeVisible();
 
-    const sectionToggle = sidebarDialog.getByRole("button", {
-      name: /Pre-Configuration/i,
-    });
-    const sectionContent = sidebarDialog.locator(
-      `#${await sectionToggle.getAttribute("aria-controls")}`,
-    );
+    await sidebarDialog.getByRole("button", { name: "Quote Identity" }).click();
 
-    await sectionToggle.click();
-
-    await expect(sectionToggle).toHaveAttribute("aria-expanded", "false");
-    await expect(sectionContent).toBeHidden();
-    await expect(sidebarDialog).toBeVisible();
+    await expect(page).toHaveURL(/\/workflow\/quote-identity$/);
+    await expect(page.getByRole("heading", { name: "Quote Identity" })).toBeVisible();
+    await expect(sidebarDialog).toHaveCount(0);
   });
 });

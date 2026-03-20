@@ -8,6 +8,7 @@ import {
   createDivisionInWorkspace,
   CpqWorkspaceSchema,
   duplicateEstimateInWorkspace,
+  getDefaultWorkflowStepId,
   removeAttachmentFromEstimateInWorkspace,
   removeSelectionFromWorkspace,
   setActiveEstimateInWorkspace,
@@ -41,6 +42,36 @@ export const CPQ_WORKSPACE_STORAGE_KEY = "cohesiv_cpq_workspace";
 const DEFAULT_CPQ_WORKSPACE = createDefaultCpqWorkspace();
 let rolePreviewOverride: UserRole | null = null;
 const rolePreviewListeners = new Set<(role: UserRole | null) => void>();
+
+/**
+ * Normalizes older local workspace payloads so starter upgrades can add
+ * workflow fields without immediately breaking persisted browser state.
+ */
+function normalizeWorkspaceShape(workspace: CpqWorkspace): CpqWorkspace {
+  const defaultWorkflowStepId = getDefaultWorkflowStepId();
+
+  return {
+    ...workspace,
+    starter_pre_configuration: {
+      customer_name: workspace.starter_pre_configuration.customer_name ?? "",
+      collection_name:
+        workspace.starter_pre_configuration.collection_name ?? "",
+      quote_year: workspace.starter_pre_configuration.quote_year ?? "",
+      sequence_code:
+        workspace.starter_pre_configuration.sequence_code ?? "",
+      item_name: workspace.starter_pre_configuration.item_name ?? "",
+      confirmation_notes:
+        workspace.starter_pre_configuration.confirmation_notes ?? "",
+    },
+    ui: {
+      active_workflow_step_id:
+        workspace.ui.active_workflow_step_id || defaultWorkflowStepId,
+      workflow_completed: workspace.ui.workflow_completed ?? false,
+      active_role: workspace.ui.active_role,
+      theme_mode: workspace.ui.theme_mode,
+    },
+  };
+}
 
 /**
  * Shares the in-memory role preview across routes without persisting it.
@@ -141,6 +172,10 @@ export function useCpqWorkspaceStorage(): UseCpqWorkspaceStorageResult {
   const [activeRolePreview, setActiveRolePreview] = useState<UserRole | null>(
     rolePreviewOverride,
   );
+  const normalizedWorkspace = useMemo<CpqWorkspace>(
+    () => normalizeWorkspaceShape(workspace),
+    [workspace],
+  );
 
   /**
    * A preview role should follow the live shell in-memory, but should never be
@@ -154,20 +189,23 @@ export function useCpqWorkspaceStorage(): UseCpqWorkspaceStorageResult {
    */
   const workspaceWithRolePreview = useMemo<CpqWorkspace>(
     () => ({
-      ...workspace,
+      ...normalizedWorkspace,
       ui: {
-        ...workspace.ui,
-        active_role: activeRolePreview ?? workspace.ui.active_role,
+        ...normalizedWorkspace.ui,
+        active_role:
+          activeRolePreview ?? normalizedWorkspace.ui.active_role,
       },
     }),
-    [activeRolePreview, workspace],
+    [activeRolePreview, normalizedWorkspace],
   );
 
   /**
    * Re-validates workspace writes so routes cannot bypass the shared schema.
    */
   const replaceWorkspace = (nextWorkspace: CpqWorkspace): void => {
-    const validation = CpqWorkspaceSchema.safeParse(nextWorkspace);
+    const validation = CpqWorkspaceSchema.safeParse(
+      normalizeWorkspaceShape(nextWorkspace),
+    );
     if (!validation.success) {
       return;
     }
@@ -183,8 +221,12 @@ export function useCpqWorkspaceStorage(): UseCpqWorkspaceStorageResult {
     updateWorkspace: (currentWorkspace: CpqWorkspace) => CpqWorkspace,
   ): void => {
     setWorkspace((currentWorkspace) => {
-      const nextWorkspace = updateWorkspace(currentWorkspace);
-      const validation = CpqWorkspaceSchema.safeParse(nextWorkspace);
+      const nextWorkspace = updateWorkspace(
+        normalizeWorkspaceShape(currentWorkspace),
+      );
+      const validation = CpqWorkspaceSchema.safeParse(
+        normalizeWorkspaceShape(nextWorkspace),
+      );
 
       return validation.success ? validation.data : currentWorkspace;
     });

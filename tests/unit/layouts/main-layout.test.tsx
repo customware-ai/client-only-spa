@@ -1,21 +1,41 @@
+import type { ReactElement } from "react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { createMemoryRouter, RouterProvider } from "react-router";
+import {
+  createMemoryRouter,
+  RouterProvider,
+  useParams,
+} from "react-router";
 import MainLayout from "../../../app/layouts/MainLayout";
-import { clearCpqWorkspaceFromStorage, seedCpqWorkspaceInStorage } from "../../../app/utils/cpq-storage";
+import {
+  clearCpqWorkspaceFromStorage,
+  seedCpqWorkspaceInStorage,
+} from "../../../app/utils/cpq-storage";
+
+/**
+ * Minimal route body used to confirm shell-driven step navigation.
+ */
+function StepRouteBody(): ReactElement {
+  const params = useParams();
+
+  return <div>{params.stepId} body</div>;
+}
 
 /**
  * Builds a memory router around the shared CPQ layout.
  */
-function createLayoutRouter(initialEntries: string[]): ReturnType<typeof createMemoryRouter> {
+function createLayoutRouter(
+  initialEntries: string[],
+): ReturnType<typeof createMemoryRouter> {
   return createMemoryRouter(
     [
       {
         path: "/",
         element: <MainLayout />,
         children: [
-          { index: true, element: <div>Dashboard body</div> },
+          { index: true, element: <div>Root body</div> },
+          { path: "workflow/:stepId", element: <StepRouteBody /> },
         ],
       },
     ],
@@ -24,7 +44,7 @@ function createLayoutRouter(initialEntries: string[]): ReturnType<typeof createM
 }
 
 /**
- * Updates the mocked viewport width so the shadcn sidebar can switch between its
+ * Updates the mocked viewport width so the shadcn sidebar can switch between
  * desktop off-canvas behavior and mobile sheet behavior inside jsdom.
  */
 function setViewportWidth(width: number): void {
@@ -80,8 +100,8 @@ describe("main layout", () => {
     seedCpqWorkspaceInStorage();
   });
 
-  it("renders the CPQ shell navigation and workflow rail", async () => {
-    const router = createLayoutRouter(["/"]);
+  it("renders the CPQ shell navigation and staged workflow rail", async () => {
+    const router = createLayoutRouter(["/workflow/customer-collection"]);
     render(<RouterProvider router={router} />);
 
     const logoMark = await screen.findByText("CW");
@@ -92,45 +112,58 @@ describe("main layout", () => {
     expect(screen.queryByText("Customware CPQ")).not.toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Workspace" })).toHaveLength(2);
     expect(screen.getByText("Workflow")).toBeInTheDocument();
-    expect(screen.getByText("0 of 4 steps")).toBeInTheDocument();
+    expect(screen.getByText("0 of 3 steps")).toBeInTheDocument();
     expect(screen.getByText("0%")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Pre-Configuration/i })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
-    expect(screen.getByText("Step 1 of 4")).toBeInTheDocument();
     expect(
-      screen.getByText("Customer & Collection").closest("[aria-current='step']"),
-    ).not.toBeNull();
-    expect(screen.getByText("Dashboard body")).toBeInTheDocument();
+      screen.getByRole("button", { name: /Pre-Configuration/i }),
+    ).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("Step 1 of 2")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Scope & Review/i })).toHaveTextContent(
+      "Upcoming",
+    );
+    expect(
+      screen.getByRole("button", { name: "Customer & Collection" }),
+    ).toHaveAttribute("aria-current", "step");
+    expect(screen.getByText("customer-collection body")).toBeInTheDocument();
   });
 
-  it("collapses and expands the workflow section without navigating", async () => {
-    const router = createLayoutRouter(["/"]);
+  it("collapses and expands a workflow stage without navigating", async () => {
+    const router = createLayoutRouter(["/workflow/customer-collection"]);
     render(<RouterProvider router={router} />);
 
-    const sectionToggle = screen.getByRole("button", { name: /Pre-Configuration/i });
+    const sectionToggle = screen.getByRole("button", {
+      name: /Pre-Configuration/i,
+    });
     const sectionContent = document.getElementById(
       sectionToggle.getAttribute("aria-controls") ?? "",
     );
 
-    expect(screen.getByText("Customer & Collection")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Quote Identity" })).toBeInTheDocument();
 
     await userEvent.click(sectionToggle);
 
     expect(sectionToggle).toHaveAttribute("aria-expanded", "false");
     expect(sectionContent).toHaveAttribute("hidden");
-    expect(screen.getByText("Dashboard body")).toBeInTheDocument();
+    expect(screen.getByText("customer-collection body")).toBeInTheDocument();
 
     await userEvent.click(sectionToggle);
 
     expect(sectionToggle).toHaveAttribute("aria-expanded", "true");
     expect(sectionContent).not.toHaveAttribute("hidden");
-    expect(screen.getByText("Customer & Collection")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Quote Identity" })).toBeInTheDocument();
+  });
+
+  it("navigates between workflow step pages from the rail", async () => {
+    const router = createLayoutRouter(["/workflow/customer-collection"]);
+    render(<RouterProvider router={router} />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Quote Identity" }));
+
+    expect(await screen.findByText("quote-identity body")).toBeInTheDocument();
   });
 
   it("collapses and restores the desktop workflow sidebar", async () => {
-    const router = createLayoutRouter(["/"]);
+    const router = createLayoutRouter(["/workflow/customer-collection"]);
     render(<RouterProvider router={router} />);
 
     const sidebarRoot = document.querySelector(
@@ -152,34 +185,27 @@ describe("main layout", () => {
     expect(sidebarRoot).toHaveAttribute("data-state", "expanded");
   });
 
-  it("keeps the mobile workflow drawer open while toggling a section", async () => {
+  it("closes the mobile workflow drawer after selecting a step", async () => {
     setViewportWidth(390);
-    const router = createLayoutRouter(["/"]);
+    const router = createLayoutRouter(["/workflow/customer-collection"]);
     render(<RouterProvider router={router} />);
 
     await userEvent.click(
       screen.getByRole("button", { name: "Toggle workflow sidebar" }),
     );
 
-    expect(await screen.findByRole("dialog", { name: "Sidebar" })).toBeInTheDocument();
-
     const sidebarDialog = await screen.findByRole("dialog", { name: "Sidebar" });
-    const sectionToggle = within(sidebarDialog).getByRole("button", {
-      name: /Pre-Configuration/i,
-    });
-    const sectionContent = document.getElementById(
-      sectionToggle.getAttribute("aria-controls") ?? "",
+
+    await userEvent.click(
+      within(sidebarDialog).getByRole("button", { name: "Quote Identity" }),
     );
 
-    await userEvent.click(sectionToggle);
-
-    expect(sectionToggle).toHaveAttribute("aria-expanded", "false");
-    expect(sectionContent).toHaveAttribute("hidden");
-    expect(screen.getByRole("dialog", { name: "Sidebar" })).toBeInTheDocument();
+    expect(await screen.findByText("quote-identity body")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "Sidebar" })).not.toBeInTheDocument();
   });
 
   it("toggles the persisted theme mode from the header control", async () => {
-    const router = createLayoutRouter(["/"]);
+    const router = createLayoutRouter(["/workflow/customer-collection"]);
     render(<RouterProvider router={router} />);
 
     expect(document.documentElement.classList.contains("dark")).toBe(false);
@@ -190,7 +216,7 @@ describe("main layout", () => {
   });
 
   it("keeps role preview in memory instead of persisting it", async () => {
-    const router = createLayoutRouter(["/"]);
+    const router = createLayoutRouter(["/workflow/customer-collection"]);
     render(<RouterProvider router={router} />);
 
     expect(readStoredRole()).toBe("admin");

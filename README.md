@@ -37,7 +37,7 @@ The template demonstrates a simplified, modern stack with React Router v7, TypeS
 
 ### ✅ Fully Functional (Study These):
 
-- **UI shell and pages** - Shared `MainLayout` + CPQ dashboard/estimate/configure routes
+- **UI shell and workflow pages** - Shared `MainLayout` + route-backed CPQ workflow starter
 - **Server example slice** - `estimate` contract/query/service/tRPC route chain
 - **Database layer** - Drizzle schema + generated SQL migrations + runner
 - **Quality gates** - Typecheck, lint, build, and test workflows
@@ -56,8 +56,26 @@ This template demonstrates:
 - **Type Safety**: Zod runtime contracts + neverthrow Result/ResultAsync patterns
 - **Database Layer**: better-sqlite3 + Drizzle ORM with migration-driven schema changes
 - **UI Patterns**: Tailwind CSS v4 with reusable components and a shared app layout
+- **Workflow Engine Starter**: CPQ workflow data drives stages, steps, progress, and page routing
 - **Code Quality**: Type-aware linting (oxlint) + Vitest coverage
 - **Architecture**: Explicit client/server boundary with typed API contracts
+
+## Workflow Starter
+
+This starter is set up as a **CPQ template built around a workflow system**.
+
+- The left workflow rail is organized into **stages**
+- Each stage contains **steps**
+- Each step has its own **route-backed page**
+- Clicking a stage expands or collapses it
+- Clicking a step navigates to that step page
+- Each step page includes a **proceed action** that advances to the next step, and then into the next stage when needed
+
+The seeded example currently starts with small stages so the template is easy to understand, but the workflow engine is **not** limited to two steps per stage. Teams can add more stages and more steps by extending the workflow data shape.
+
+Today the workflow state is stored locally in browser storage so the template works without backend setup. Teams building on top of this template can keep the same workflow/page structure and replace the local storage source with their own database-backed workflow data.
+
+The workflow behavior itself now lives in a separate core module, `app/lib/workflow-engine.ts`. The starter CPQ data layer feeds stage/step definitions into that engine, and the current template persists the runtime state in local storage. Teams can keep the same engine and swap only the data source, or move the same engine concepts to the backend if they want the workflow to execute server-side.
 
 ## Tech Stack
 
@@ -111,13 +129,13 @@ app/
 ├── layouts/
 │   └── MainLayout.tsx         # Shared page shell + header
 ├── lib/
+│   ├── workflow-engine.ts     # Pure workflow progression + derivation engine
 │   ├── trpc.ts                # Typed tRPC client type binding
 │   ├── trpc-provider.tsx      # Typed provider scaffolding
 │   └── utils.ts
 ├── routes/
-│   ├── index.tsx              # Account workflow dashboard
-│   ├── estimates.$estimateId.tsx # Estimate workspace page
-│   └── configure.$estimateId.tsx # Configure/build page
+│   ├── index.tsx              # Root redirect into the active workflow step
+│   └── workflow.$stepId.tsx   # Route-backed workflow step page
 ├── routes.ts                  # Route definitions
 └── root.tsx
 

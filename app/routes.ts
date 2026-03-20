@@ -8,6 +8,7 @@ import {
   type RouteConfig,
   index,
   layout,
+  route,
 } from "@react-router/dev/routes";
 import { attachGlobalFrontendErrorHandlers } from "./utils/error-logger";
 
@@ -26,5 +27,6 @@ attachGlobalFrontendErrorHandlers({ endpoint: "/logs" });
 export default [
   layout("layouts/MainLayout.tsx", [
     index("routes/index.tsx"),
+    route("workflow/:stepId", "routes/workflow.$stepId.tsx"),
   ]),
 ] satisfies RouteConfig;

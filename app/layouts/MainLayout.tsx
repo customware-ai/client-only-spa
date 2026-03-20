@@ -37,7 +37,6 @@ function MainLayoutShell(): ReactElement {
     workspace,
     resetWorkspace,
     setActiveRole,
-    advanceWorkflow,
     toggleThemeMode,
   } = useCpqWorkspaceStorage();
   const currentWorkflowStep = getCurrentWorkflowStep(workspace);
@@ -66,11 +65,7 @@ function MainLayoutShell(): ReactElement {
   return (
     <>
       <Sidebar side="left" collapsible="offcanvas">
-        <WorkflowRail
-          workspace={workspace}
-          className="border-r-0"
-          onAdvance={advanceWorkflow}
-        />
+        <WorkflowRail workspace={workspace} className="border-r-0" />
       </Sidebar>
 
       <SidebarInset className="min-h-screen min-w-0">

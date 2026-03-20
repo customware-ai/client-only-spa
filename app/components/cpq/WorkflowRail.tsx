@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactElement } from "react";
+import { useNavigate } from "react-router";
 import {
   BriefcaseBusiness,
   ChevronRight,
@@ -7,11 +8,10 @@ import {
   Send,
   Target,
 } from "lucide-react";
-import { Button } from "../ui/Button";
+import { useSidebar } from "../ui/Sidebar";
 import {
   getWorkflowProgress,
   getWorkflowSections,
-  getWorkflowStepMetas,
   type CpqWorkspace,
   type WorkflowSection,
   type WorkflowState,
@@ -21,7 +21,13 @@ import { cn } from "../../lib/utils";
 interface WorkflowRailProps {
   workspace: CpqWorkspace;
   className?: string;
-  onAdvance: () => void;
+}
+
+/**
+ * Builds the shared route path for each workflow step page.
+ */
+function getWorkflowStepPath(stepId: string): string {
+  return `/workflow/${stepId}`;
 }
 
 /**
@@ -80,11 +86,11 @@ function getStepDotTone(state: WorkflowState): string {
 export function WorkflowRail({
   workspace,
   className,
-  onAdvance,
 }: WorkflowRailProps): ReactElement {
+  const navigate = useNavigate();
+  const { isMobile, setOpenMobile } = useSidebar();
   const progress = getWorkflowProgress(workspace);
   const workflowSections = getWorkflowSections(workspace);
-  const orderedSteps = getWorkflowStepMetas(workspace);
   const currentSectionId =
     workflowSections.find((section) => section.state === "current")?.id ??
     workflowSections[0]?.id ??
@@ -134,20 +140,17 @@ export function WorkflowRail({
   }, [currentSectionId, workflowSectionIds]);
 
   /**
-   * The advance action mirrors a "next step" workflow control.
+   * Step navigation should also dismiss the mobile drawer so the newly selected
+   * page is visible immediately after the route change.
    */
-  const handleAdvance = (): void => {
-    const activeStepIndex = orderedSteps.findIndex(
-      (step) => step.stepId === workspace.ui.active_workflow_step_id,
-    );
-    const hasNextStep =
-      activeStepIndex >= 0 && activeStepIndex < orderedSteps.length - 1;
-
-    if (!hasNextStep) {
+  const handleStepNavigation = (stepId: string): void => {
+    if (isMobile) {
+      setOpenMobile(false);
+      window.setTimeout(() => navigate(getWorkflowStepPath(stepId)), 0);
       return;
     }
 
-    onAdvance();
+    navigate(getWorkflowStepPath(stepId));
   };
 
   /**
@@ -187,14 +190,6 @@ export function WorkflowRail({
               <span>Workflow</span>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleAdvance}
-            disabled={orderedSteps.length <= 1}
-          >
-            <span>Advance</span>
-          </Button>
         </div>
         <div className="mt-3 flex items-center justify-between text-xs text-stone-500 dark:text-zinc-400">
           <span>
@@ -260,11 +255,15 @@ export function WorkflowRail({
 
                     return (
                       <li key={step.id}>
-                        <div
+                        <button
+                          type="button"
+                          onClick={() => handleStepNavigation(step.id)}
                           aria-current={isActiveStep ? "step" : undefined}
                           className={cn(
-                            "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm",
-                            isActiveStep && "bg-stone-100 dark:bg-zinc-900",
+                            "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors duration-150",
+                            isActiveStep
+                              ? "bg-stone-100 text-stone-900 dark:bg-zinc-900 dark:text-zinc-100"
+                              : "hover:bg-stone-100 hover:text-stone-900 dark:hover:bg-zinc-900 dark:hover:text-zinc-100",
                           )}
                         >
                           <span
@@ -283,7 +282,7 @@ export function WorkflowRail({
                           >
                             {step.label}
                           </span>
-                        </div>
+                        </button>
                       </li>
                     );
                   })}

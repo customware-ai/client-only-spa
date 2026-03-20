@@ -1,4 +1,20 @@
 import { z } from "zod";
+import {
+  advanceWorkflow as advanceWorkflowState,
+  getCurrentWorkflowStepMeta,
+  getFirstWorkflowStepId,
+  getNextWorkflowStepMeta,
+  getWorkflowProgress as getWorkflowEngineProgress,
+  getWorkflowStepMetaById as getWorkflowEngineStepMetaById,
+  getWorkflowStepMetas as getWorkflowEngineStepMetas,
+  isWorkflowComplete as isWorkflowEngineComplete,
+  resolveWorkflowStages,
+  setActiveWorkflowStep as setActiveWorkflowStepState,
+  type WorkflowRuntimeState,
+  type WorkflowStageDefinition,
+  type WorkflowStepDefinition,
+  type WorkflowStepMeta as WorkflowEngineStepMeta,
+} from "./workflow-engine";
 
 /**
  * Shared workflow state used across the dashboard, estimate workspace, and
@@ -38,18 +54,23 @@ export const WorkflowStepSchema = z.object({
 /**
  * Workflow section contract derived from the active mock workflow position.
  */
+export const WorkflowSectionIconKeySchema = z.enum([
+  "capture",
+  "account",
+  "proposal",
+  "delivery",
+  "project",
+]);
+
+/**
+ * Workflow section contract derived from the active mock workflow position.
+ */
 export const WorkflowSectionSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
   summary: z.string().min(1),
   state: WorkflowStateSchema,
-  icon_key: z.enum([
-    "capture",
-    "account",
-    "proposal",
-    "delivery",
-    "project",
-  ]),
+  icon_key: WorkflowSectionIconKeySchema,
   steps: z.array(WorkflowStepSchema).min(1),
 });
 
@@ -164,6 +185,7 @@ export const EstimateSchema = z.object({
  */
 export const CpqUiStateSchema = z.object({
   active_workflow_step_id: z.string().min(1),
+  workflow_completed: z.boolean(),
   active_role: UserRoleSchema,
   theme_mode: ThemeModeSchema,
 });
@@ -198,6 +220,7 @@ export const CpqWorkspaceSchema = z.object({
 });
 
 export type WorkflowState = z.infer<typeof WorkflowStateSchema>;
+export type WorkflowSectionIconKey = z.infer<typeof WorkflowSectionIconKeySchema>;
 export type WorkflowStep = z.infer<typeof WorkflowStepSchema>;
 export type WorkflowSection = z.infer<typeof WorkflowSectionSchema>;
 export type AccountSummary = z.infer<typeof AccountSummarySchema>;
@@ -260,17 +283,23 @@ export interface DashboardMetrics {
 }
 
 /**
+ * Starter workflow definitions stay separate from the engine so template users
+ * can replace the data source without rewriting progression logic.
+ */
+type StarterWorkflowStepDefinition = WorkflowStepDefinition;
+
+/**
+ * Starter workflow stages add only the presentation metadata the shell needs.
+ */
+interface StarterWorkflowStageDefinition
+  extends WorkflowStageDefinition<StarterWorkflowStepDefinition> {
+  icon_key: WorkflowSectionIconKey;
+}
+
+/**
  * Flattened workflow step metadata used by the workflow rail and route actions.
  */
-export interface WorkflowStepMeta {
-  sectionId: string;
-  sectionTitle: string;
-  stepId: string;
-  stepLabel: string;
-  state: WorkflowState;
-  stepIndex: number;
-  stepCount: number;
-}
+export type WorkflowStepMeta = WorkflowEngineStepMeta<StarterWorkflowStepDefinition>;
 
 /**
  * Fixed modifier values keep the local-first experience deterministic.
@@ -296,38 +325,79 @@ function createDefaultStarterPreConfiguration(): StarterPreConfiguration {
 }
 
 /**
- * Defines the static workflow skeleton used by the mock process controls.
+ * Defines the seeded workflow skeleton used by the starter template.
+ * The example ships with two steps per stage, but the workflow engine itself
+ * is not limited to that count.
  */
-function createBaseWorkflowSections(): WorkflowSection[] {
+function createBaseWorkflowDefinition(): StarterWorkflowStageDefinition[] {
   return [
     {
       id: "pre-configuration",
       title: "Pre-Configuration",
-      summary: "Step 1 of 4",
-      state: "current",
       icon_key: "capture",
       steps: [
         {
           id: "customer-collection",
           label: "Customer & Collection",
-          state: "current",
         },
         {
-          id: "year-sequence",
-          label: "Year & Sequence",
-          state: "upcoming",
+          id: "quote-identity",
+          label: "Quote Identity",
         },
-        { id: "item-name", label: "Item Name", state: "upcoming" },
-        { id: "confirmation", label: "Confirmation", state: "upcoming" },
+      ],
+    },
+    {
+      id: "scope-review",
+      title: "Scope & Review",
+      icon_key: "proposal",
+      steps: [
+        {
+          id: "starter-scope",
+          label: "Starter Scope",
+        },
       ],
     },
   ];
 }
 
 /**
+ * Exposes the starter's first step from the workflow definition instead of
+ * duplicating that knowledge in storage and seed helpers.
+ */
+export function getDefaultWorkflowStepId(): string {
+  return getFirstWorkflowStepId(createBaseWorkflowDefinition()) ?? "customer-collection";
+}
+
+/**
+ * Exposes the starter's initial step label so seeded estimate metadata stays in
+ * sync with whatever the first defined workflow step is.
+ */
+function getDefaultWorkflowStepLabel(): string {
+  return (
+    getCurrentWorkflowStepMeta(createBaseWorkflowDefinition(), {
+      activeStepId: getDefaultWorkflowStepId(),
+      workflowCompleted: false,
+    })?.stepLabel ?? "Customer & Collection"
+  );
+}
+
+/**
+ * Adapts persisted UI state into the pure workflow engine runtime contract.
+ */
+function getWorkflowRuntimeState(workspace: CpqWorkspace): WorkflowRuntimeState {
+  return {
+    activeStepId: workspace.ui.active_workflow_step_id,
+    workflowCompleted: workspace.ui.workflow_completed,
+  };
+}
+
+/**
  * Generates a stable seeded workspace for first-run and test seeding.
  */
 export function createDefaultCpqWorkspace(): CpqWorkspace {
+  const defaultWorkflowStepId = getDefaultWorkflowStepId();
+  const defaultWorkflowStepLabel = getDefaultWorkflowStepLabel();
+
   return {
     account: {
       id: "acct-dr-inc",
@@ -349,7 +419,7 @@ export function createDefaultCpqWorkspace(): CpqWorkspace {
         revision_label: "1.0",
         region: "Default",
         status: "draft",
-        workflow_stage: "Customer & Collection",
+        workflow_stage: defaultWorkflowStepLabel,
         notes: "",
         intake_prompt: "",
         build_selections: [],
@@ -395,7 +465,8 @@ export function createDefaultCpqWorkspace(): CpqWorkspace {
     ],
     starter_pre_configuration: createDefaultStarterPreConfiguration(),
     ui: {
-      active_workflow_step_id: "customer-collection",
+      active_workflow_step_id: defaultWorkflowStepId,
+      workflow_completed: false,
       active_role: "admin",
       theme_mode: "light",
     },
@@ -426,10 +497,25 @@ export function getEstimateById(
 }
 
 /**
- * Derives workflow sections from the one persisted active step id.
+ * Derives workflow sections by combining starter workflow definitions with the
+ * persisted workflow position.
  */
 export function getWorkflowSections(workspace: CpqWorkspace): WorkflowSection[] {
-  return buildWorkflowSections(workspace.ui.active_workflow_step_id);
+  return resolveWorkflowStages(
+    createBaseWorkflowDefinition(),
+    getWorkflowRuntimeState(workspace),
+  ).map((section) => ({
+    id: section.id,
+    title: section.title,
+    summary: section.summary,
+    state: section.state,
+    icon_key: section.icon_key,
+    steps: section.steps.map((step) => ({
+      id: step.id,
+      label: step.label,
+      state: step.state,
+    })),
+  }));
 }
 
 /**
@@ -438,18 +524,26 @@ export function getWorkflowSections(workspace: CpqWorkspace): WorkflowSection[] 
 export function getWorkflowStepMetas(
   workspace: CpqWorkspace,
 ): WorkflowStepMeta[] {
-  return getWorkflowSections(workspace).flatMap((section) =>
-    section.steps.map(
-      (step, stepIndex): WorkflowStepMeta => ({
-        sectionId: section.id,
-        sectionTitle: section.title,
-        stepId: step.id,
-        stepLabel: step.label,
-        state: step.state,
-        stepIndex,
-        stepCount: section.steps.length,
-      }),
-    ),
+  return getWorkflowEngineStepMetas(
+    createBaseWorkflowDefinition(),
+    getWorkflowRuntimeState(workspace),
+  );
+}
+
+/**
+ * Resolves one step meta by id so route navigation and progression controls can
+ * rely on the same ordered workflow source.
+ */
+export function getWorkflowStepMetaById(
+  workspace: CpqWorkspace,
+  stepId: string,
+): WorkflowStepMeta | null {
+  return (
+    getWorkflowEngineStepMetaById(
+      createBaseWorkflowDefinition(),
+      getWorkflowRuntimeState(workspace),
+      stepId,
+    ) ?? null
   );
 }
 
@@ -459,14 +553,37 @@ export function getWorkflowStepMetas(
 export function getCurrentWorkflowStep(
   workspace: CpqWorkspace,
 ): WorkflowStepMeta | null {
-  const steps = getWorkflowStepMetas(workspace);
-
   return (
-    steps.find((step) => step.stepId === workspace.ui.active_workflow_step_id) ??
-    steps.find((step) => step.state === "current") ??
-    steps[0] ??
-    null
+    getCurrentWorkflowStepMeta(
+      createBaseWorkflowDefinition(),
+      getWorkflowRuntimeState(workspace),
+    ) ?? null
   );
+}
+
+/**
+ * Returns the next step in the starter process, crossing stage boundaries when
+ * needed so page-level proceed actions can act like a workflow engine.
+ */
+export function getNextWorkflowStep(
+  workspace: CpqWorkspace,
+  stepId: string = workspace.ui.active_workflow_step_id,
+): WorkflowStepMeta | null {
+  return (
+    getNextWorkflowStepMeta(
+      createBaseWorkflowDefinition(),
+      getWorkflowRuntimeState(workspace),
+      stepId,
+    ) ?? null
+  );
+}
+
+/**
+ * Exposes workflow completion so routes can distinguish "final step" from
+ * "starter flow complete."
+ */
+export function isWorkflowComplete(workspace: CpqWorkspace): boolean {
+  return isWorkflowEngineComplete(getWorkflowRuntimeState(workspace));
 }
 
 /**
@@ -631,17 +748,10 @@ export function getWorkflowProgress(workspace: CpqWorkspace): {
   totalSteps: number;
   percent: number;
 } {
-  const allSteps = getWorkflowSections(workspace).flatMap((section) => section.steps);
-  const completeSteps = allSteps.filter((step) => step.state === "complete").length;
-  const totalSteps = allSteps.length;
-  const percent =
-    totalSteps === 0 ? 0 : Math.round((completeSteps / totalSteps) * 100);
-
-  return {
-    completeSteps,
-    totalSteps,
-    percent,
-  };
+  return getWorkflowEngineProgress(
+    createBaseWorkflowDefinition(),
+    getWorkflowRuntimeState(workspace),
+  );
 }
 
 /**
@@ -715,62 +825,6 @@ export function canApproveEstimate(role: UserRole): boolean {
 }
 
 /**
- * Rebuilds section and step states around the selected step so the workflow rail
- * acts like a real process control instead of static copy.
- */
-function buildWorkflowSections(activeStepId: string): WorkflowSection[] {
-  const sections = createBaseWorkflowSections();
-  const orderedStepIds = sections.flatMap((section) =>
-    section.steps.map((step) => step.id),
-  );
-  const activeStepIndex = Math.max(orderedStepIds.indexOf(activeStepId), 0);
-
-  return sections.map((section) => {
-    const nextSteps = section.steps.map((step) => {
-      const currentIndex = orderedStepIds.indexOf(step.id);
-
-      if (currentIndex < activeStepIndex) {
-        return { ...step, state: "complete" as const };
-      }
-
-      if (currentIndex === activeStepIndex) {
-        return { ...step, state: "current" as const };
-      }
-
-      return { ...step, state: "upcoming" as const };
-    });
-
-    const completeCount = nextSteps.filter((step) => step.state === "complete").length;
-    const currentIndex = nextSteps.findIndex((step) => step.state === "current");
-
-    if (completeCount === nextSteps.length) {
-      return {
-        ...section,
-        steps: nextSteps,
-        state: "complete" as const,
-        summary: "Completed",
-      };
-    }
-
-    if (currentIndex >= 0) {
-      return {
-        ...section,
-        steps: nextSteps,
-        state: "current" as const,
-        summary: `Step ${currentIndex + 1} of ${nextSteps.length}`,
-      };
-    }
-
-    return {
-      ...section,
-      steps: nextSteps,
-      state: "upcoming" as const,
-      summary: "Upcoming",
-    };
-  });
-}
-
-/**
  * Stable id generator keeps new local records unique without backend support.
  */
 function createWorkspaceId(prefix: string): string {
@@ -801,24 +855,34 @@ export function setActiveWorkflowStepInWorkspace(
   workspace: CpqWorkspace,
   stepId: string,
 ): CpqWorkspace {
-  const currentStep = getWorkflowStepMetas({
-    ...workspace,
-    ui: {
-      ...workspace.ui,
-      active_workflow_step_id: stepId,
-    },
-  }).find(
-    (step) => step.stepId === stepId,
+  const nextWorkflowRuntimeState = setActiveWorkflowStepState(
+    createBaseWorkflowDefinition(),
+    getWorkflowRuntimeState(workspace),
+    stepId,
   );
+  const currentStep = getWorkflowEngineStepMetaById(
+    createBaseWorkflowDefinition(),
+    nextWorkflowRuntimeState,
+    nextWorkflowRuntimeState.activeStepId,
+  );
+
+  if (
+    !currentStep ||
+    (nextWorkflowRuntimeState.activeStepId === workspace.ui.active_workflow_step_id &&
+      nextWorkflowRuntimeState.workflowCompleted === workspace.ui.workflow_completed)
+  ) {
+    return workspace;
+  }
 
   return {
     ...workspace,
     ui: {
       ...workspace.ui,
-      active_workflow_step_id: stepId,
+      active_workflow_step_id: nextWorkflowRuntimeState.activeStepId,
+      workflow_completed: nextWorkflowRuntimeState.workflowCompleted,
     },
     estimates: workspace.estimates.map((estimate) =>
-      estimate.id === workspace.active_estimate_id && currentStep
+      estimate.id === workspace.active_estimate_id
         ? {
             ...estimate,
             workflow_stage: currentStep.stepLabel,
@@ -835,20 +899,43 @@ export function setActiveWorkflowStepInWorkspace(
 export function advanceWorkflowInWorkspace(
   workspace: CpqWorkspace,
 ): CpqWorkspace {
-  const orderedSteps = getWorkflowStepMetas(workspace);
-  const activeIndex = orderedSteps.findIndex(
-    (step) => step.stepId === workspace.ui.active_workflow_step_id,
+  const nextWorkflowRuntimeState = advanceWorkflowState(
+    createBaseWorkflowDefinition(),
+    getWorkflowRuntimeState(workspace),
   );
-  const nextStep =
-    activeIndex >= 0 && activeIndex < orderedSteps.length - 1
-      ? orderedSteps[activeIndex + 1]
-      : null;
 
-  if (!nextStep) {
+  if (
+    nextWorkflowRuntimeState.activeStepId === workspace.ui.active_workflow_step_id &&
+    nextWorkflowRuntimeState.workflowCompleted === workspace.ui.workflow_completed
+  ) {
     return workspace;
   }
 
-  return setActiveWorkflowStepInWorkspace(workspace, nextStep.stepId);
+  const nextStep = nextWorkflowRuntimeState.workflowCompleted
+    ? null
+    : getWorkflowEngineStepMetaById(
+        createBaseWorkflowDefinition(),
+        nextWorkflowRuntimeState,
+        nextWorkflowRuntimeState.activeStepId,
+      );
+
+  return {
+    ...workspace,
+    ui: {
+      ...workspace.ui,
+      active_workflow_step_id: nextWorkflowRuntimeState.activeStepId,
+      workflow_completed: nextWorkflowRuntimeState.workflowCompleted,
+    },
+    estimates: workspace.estimates.map((estimate) =>
+      estimate.id === workspace.active_estimate_id
+        ? {
+            ...estimate,
+            workflow_stage: nextStep?.stepLabel ?? "Completed",
+            updated_at: new Date().toISOString(),
+          }
+        : estimate,
+    ),
+  };
 }
 
 /**
@@ -1157,6 +1244,8 @@ export function createDivisionInWorkspace(
   const nextIndex = workspace.estimates.length + 1;
   const estimateId = createWorkspaceId("est");
   const estimateNumber = `EST-${(1003 + nextIndex).toString().padStart(6, "0")}`;
+  const defaultWorkflowStepId = getDefaultWorkflowStepId();
+  const defaultWorkflowStepLabel = getDefaultWorkflowStepLabel();
 
   const nextEstimate: Estimate = {
     id: estimateId,
@@ -1166,7 +1255,7 @@ export function createDivisionInWorkspace(
     revision_label: "1.0",
     region: "Default",
     status: "draft",
-    workflow_stage: "Customer & Collection",
+    workflow_stage: defaultWorkflowStepLabel,
     notes: "Starter record created from the shell reset/test utilities.",
     intake_prompt: "",
     build_selections: [],
@@ -1182,7 +1271,8 @@ export function createDivisionInWorkspace(
       active_estimate_id: estimateId,
       ui: {
         ...workspace.ui,
-        active_workflow_step_id: "customer-collection",
+        active_workflow_step_id: defaultWorkflowStepId,
+        workflow_completed: false,
       },
     },
     estimateId,
