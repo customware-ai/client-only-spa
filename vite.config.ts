@@ -32,7 +32,4 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
-  build: {
-    minify: false,
-  },
 });
