@@ -1,3 +1,4 @@
+// THIS LAYOUT WRAPS MOCK SAMPLE SHELL STATE ONLY. REMOVE IT AND RE-ADD THE REAL REQUEST UI WHEN NEEDED.
 import { useEffect, type ReactElement } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { CircleHelp, Moon, RotateCcw, Sun, UserRound } from "lucide-react";
@@ -161,9 +162,9 @@ function MainLayoutShell(): ReactElement {
                   <SheetHeader>
                     <SheetTitle>Workspace Help</SheetTitle>
                     <SheetDescription>
-                      This starter keeps all actions local-first. Every button
-                      either changes workspace state, navigates, or mocks a CPQ
-                      workflow outcome.
+                      This example keeps all actions local-first. Every button
+                      either changes workspace state, navigates, or advances an
+                      example CPQ workflow outcome.
                     </SheetDescription>
                   </SheetHeader>
                   <div className="space-y-3 px-4 pb-4 text-sm text-stone-600 dark:text-zinc-300">
@@ -190,14 +191,15 @@ function MainLayoutShell(): ReactElement {
                 </SheetTrigger>
                 <SheetContent>
                   <SheetHeader>
-                    <SheetTitle>Demo User</SheetTitle>
+                    <SheetTitle>Example User</SheetTitle>
                     <SheetDescription>
-                      Requestor workspace controls for the seeded CPQ starter.
+                      Requestor workspace controls for the seeded CPQ example.
                     </SheetDescription>
                   </SheetHeader>
                   <div className="space-y-3 px-4 pb-4">
+                    {/* THIS HEADER CONTROL DATA IS SAMPLE-ONLY MOCK STATE. REMOVE IT AND RE-ADD THE REAL REQUEST WORKFLOW WHEN NEEDED. */}
                     <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-                      Signed in as Demo User. Current role is{" "}
+                      Signed in as Example User. Current role is{" "}
                       <span className="font-semibold capitalize text-stone-900 dark:text-zinc-100">
                         {workspace.ui.active_role}
                       </span>

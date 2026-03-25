@@ -25,7 +25,7 @@ function createWorkflowRouter(
   );
 }
 
-describe("starter workflow routes", () => {
+describe("example workflow routes", () => {
   beforeEach(() => {
     clearCpqWorkspaceFromStorage();
     seedCpqWorkspaceInStorage();
@@ -41,7 +41,7 @@ describe("starter workflow routes", () => {
     expect(router.state.location.pathname).toBe("/workflow/customer-collection");
   });
 
-  it("progresses through the route-backed starter workflow and completes it", async () => {
+  it("progresses through the route-backed example workflow and completes it", async () => {
     const router = createWorkflowRouter(["/workflow/customer-collection"]);
     render(<RouterProvider router={router} />);
 
@@ -72,7 +72,7 @@ describe("starter workflow routes", () => {
       "xl:min-w-[280px]",
     );
     expect(
-      screen.getByRole("button", { name: "Continue to Starter Scope" }),
+      screen.getByRole("button", { name: "Continue to Scope Review" }),
     ).toHaveClass("w-full", "sm:w-auto", "xl:min-w-[240px]", "2xl:min-w-[256px]");
     const pageGrid = screen.getByRole("heading", { name: "Quote Identity" }).closest("div.space-y-5");
 
@@ -92,11 +92,11 @@ describe("starter workflow routes", () => {
       "Under Running Crane",
     );
     await userEvent.click(
-      screen.getByRole("button", { name: "Continue to Starter Scope" }),
+      screen.getByRole("button", { name: "Continue to Scope Review" }),
     );
 
     expect(
-      await screen.findByRole("heading", { name: "Starter Scope" }),
+      await screen.findByRole("heading", { name: "Scope Review" }),
     ).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Load package" }));
@@ -105,8 +105,8 @@ describe("starter workflow routes", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Complete workflow" }));
 
-    expect(await screen.findByText("Starter workflow complete.")).toBeInTheDocument();
+    expect(await screen.findByText("Example workflow complete.")).toBeInTheDocument();
     expect(screen.getByText("3 / 3")).toBeInTheDocument();
-    expect(router.state.location.pathname).toBe("/workflow/starter-scope");
+    expect(router.state.location.pathname).toBe("/workflow/scope-review");
   });
 });

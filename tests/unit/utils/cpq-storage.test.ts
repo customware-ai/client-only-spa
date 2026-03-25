@@ -50,7 +50,7 @@ describe("useCpqWorkspaceStorage", () => {
     expect(result.current.workspace.estimates[0]?.status).toBe("draft");
   });
 
-  it("advances workflow state across stages and marks the starter complete", async () => {
+  it("advances workflow state across stages and marks the example complete", async () => {
     const { result } = renderHook(() => useCpqWorkspaceStorage());
 
     await act(async () => {
@@ -61,13 +61,13 @@ describe("useCpqWorkspaceStorage", () => {
     });
 
     expect(result.current.workspace.ui.active_workflow_step_id).toBe(
-      "starter-scope",
+      "scope-review",
     );
     expect(result.current.workspace.ui.workflow_completed).toBe(true);
     expect(result.current.workspace.ui.theme_mode).toBe("dark");
   });
 
-  it("persists starter pre-configuration fields into workspace storage", async () => {
+  it("persists example pre-configuration fields into workspace storage", async () => {
     const { result } = renderHook(() => useCpqWorkspaceStorage());
 
     await act(async () => {
@@ -94,7 +94,7 @@ describe("useCpqWorkspaceStorage", () => {
     expect(storedWorkspace.estimates[0]?.estimate_number).toBe("EST-2026-014");
   });
 
-  it("creates a new mocked division and returns its estimate id", async () => {
+  it("creates a new example division and returns its estimate id", async () => {
     const { result } = renderHook(() => useCpqWorkspaceStorage());
 
     let estimateId = "";

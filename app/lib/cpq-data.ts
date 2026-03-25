@@ -1,8 +1,8 @@
+// THIS FILE CONTAINS MOCK SAMPLE DATA ONLY. REMOVE IT AND RE-ADD THE REAL REQUEST DATA WHEN NEEDED.
 import { z } from "zod";
 import {
   advanceWorkflow as advanceWorkflowState,
   getCurrentWorkflowStepMeta,
-  getFirstWorkflowStepId,
   getNextWorkflowStepMeta,
   getWorkflowProgress as getWorkflowEngineProgress,
   getWorkflowStepMetaById as getWorkflowEngineStepMetaById,
@@ -23,12 +23,12 @@ import {
 export const WorkflowStateSchema = z.enum(["complete", "current", "upcoming"]);
 
 /**
- * Estimate lifecycle used by the mocked CPQ starter.
+ * Estimate lifecycle used by the example CPQ starter.
  */
 export const EstimateStatusSchema = z.enum(["draft", "review", "approved"]);
 
 /**
- * Mocked RBAC roles inspired by the CPQ bundle guidance.
+ * Example RBAC roles inspired by the CPQ bundle guidance.
  */
 export const UserRoleSchema = z.enum([
   "admin",
@@ -43,7 +43,7 @@ export const UserRoleSchema = z.enum([
 export const ThemeModeSchema = z.enum(["light", "dark"]);
 
 /**
- * Workflow step contract derived from the active mock workflow position.
+ * Workflow step contract derived from the active sample workflow position.
  */
 export const WorkflowStepSchema = z.object({
   id: z.string().min(1),
@@ -52,7 +52,7 @@ export const WorkflowStepSchema = z.object({
 });
 
 /**
- * Workflow section contract derived from the active mock workflow position.
+ * Workflow section contract derived from the active sample workflow position.
  */
 export const WorkflowSectionIconKeySchema = z.enum([
   "capture",
@@ -63,7 +63,7 @@ export const WorkflowSectionIconKeySchema = z.enum([
 ]);
 
 /**
- * Workflow section contract derived from the active mock workflow position.
+ * Workflow section contract derived from the active sample workflow position.
  */
 export const WorkflowSectionSchema = z.object({
   id: z.string().min(1),
@@ -149,7 +149,7 @@ export const BuildSelectionSchema = z.object({
 });
 
 /**
- * Mock attachments keep the estimate workspace file actions functional without a
+ * Example attachments keep the estimate workspace file actions functional without a
  * server-backed document store.
  */
 export const EstimateAttachmentSchema = z.object({
@@ -160,7 +160,7 @@ export const EstimateAttachmentSchema = z.object({
 });
 
 /**
- * Minimal mocked estimate contract used by the frontend template.
+ * Minimal example estimate contract used by the frontend template.
  */
 export const EstimateSchema = z.object({
   id: z.string().min(1),
@@ -191,7 +191,7 @@ export const CpqUiStateSchema = z.object({
 });
 
 /**
- * Small persisted CPQ intake payload owned by the starter pre-configuration
+ * Small persisted CPQ intake payload owned by the example pre-configuration
  * step. It stays intentionally narrow so template users can extend it without
  * inheriting a large demo-specific data shape.
  */
@@ -205,7 +205,7 @@ export const StarterPreConfigurationSchema = z.object({
 });
 
 /**
- * Root mocked CPQ workspace stored in localStorage.
+ * Root example CPQ workspace stored in localStorage.
  * Only mutable source data is persisted; workflow and dashboard summaries are
  * derived from this shape at read time.
  */
@@ -236,6 +236,7 @@ export type Estimate = z.infer<typeof EstimateSchema>;
 export type CpqUiState = z.infer<typeof CpqUiStateSchema>;
 export type StarterPreConfiguration = z.infer<typeof StarterPreConfigurationSchema>;
 export type CpqWorkspace = z.infer<typeof CpqWorkspaceSchema>;
+export type WorkflowStepMeta = WorkflowEngineStepMeta<WorkflowStepDefinition>;
 
 /**
  * Materialized line item used by the estimate workspace and build panel.
@@ -283,13 +284,14 @@ export interface DashboardMetrics {
 }
 
 /**
- * Starter workflow definitions stay separate from the engine so template users
- * can replace the data source without rewriting progression logic.
+ * Example workflow definitions stay isolated from the engine so the sample
+ * shell can seed ordered steps without hardcoding progression behavior.
  */
 type StarterWorkflowStepDefinition = WorkflowStepDefinition;
 
 /**
- * Starter workflow stages add only the presentation metadata the shell needs.
+ * Example workflow stages only add the shell metadata needed for the sample
+ * sidebar and page headers.
  */
 interface StarterWorkflowStageDefinition
   extends WorkflowStageDefinition<StarterWorkflowStepDefinition> {
@@ -297,37 +299,8 @@ interface StarterWorkflowStageDefinition
 }
 
 /**
- * Flattened workflow step metadata used by the workflow rail and route actions.
- */
-export type WorkflowStepMeta = WorkflowEngineStepMeta<StarterWorkflowStepDefinition>;
-
-/**
- * Fixed modifier values keep the local-first experience deterministic.
- */
-const ESTIMATE_MODIFIER_VALUES: Record<Estimate["modifiers"][number], number> = {
-  expedited: 0.08,
-  freight: 1_200,
-};
-
-/**
- * Shared starter defaults let newer page features tolerate older persisted
- * localStorage payloads that predate the pre-configuration shape.
- */
-function createDefaultStarterPreConfiguration(): StarterPreConfiguration {
-  return {
-    customer_name: "",
-    collection_name: "",
-    quote_year: "",
-    sequence_code: "",
-    item_name: "",
-    confirmation_notes: "",
-  };
-}
-
-/**
- * Defines the seeded workflow skeleton used by the starter template.
- * The example ships with two steps per stage, but the workflow engine itself
- * is not limited to that count.
+ * THIS MODULE CONTAINS SAMPLE-ONLY SEED DATA. DO NOT TREAT IT AS PRODUCTION DATA.
+ * THIS IS MOCK DATA. REMOVE IT AND RE-ADD THE REAL REQUEST DATA WHEN THE PRODUCT NEEDS IT.
  */
 function createBaseWorkflowDefinition(): StarterWorkflowStageDefinition[] {
   return [
@@ -352,8 +325,8 @@ function createBaseWorkflowDefinition(): StarterWorkflowStageDefinition[] {
       icon_key: "proposal",
       steps: [
         {
-          id: "starter-scope",
-          label: "Starter Scope",
+          id: "scope-review",
+          label: "Scope Review",
         },
       ],
     },
@@ -361,16 +334,16 @@ function createBaseWorkflowDefinition(): StarterWorkflowStageDefinition[] {
 }
 
 /**
- * Exposes the starter's first step from the workflow definition instead of
- * duplicating that knowledge in storage and seed helpers.
+ * Returns the first step from the sample workflow seed so callers do not have
+ * to duplicate the synthetic route order.
  */
 export function getDefaultWorkflowStepId(): string {
   return getFirstWorkflowStepId(createBaseWorkflowDefinition()) ?? "customer-collection";
 }
 
 /**
- * Exposes the starter's initial step label so seeded estimate metadata stays in
- * sync with whatever the first defined workflow step is.
+ * Returns the initial sample step label used to keep the seeded estimate in
+ * sync with the current example workflow definition.
  */
 function getDefaultWorkflowStepLabel(): string {
   return (
@@ -382,17 +355,23 @@ function getDefaultWorkflowStepLabel(): string {
 }
 
 /**
- * Adapts persisted UI state into the pure workflow engine runtime contract.
+ * Returns the sample starter pre-configuration object used for blank local
+ * storage hydration and first-run seeding.
  */
-function getWorkflowRuntimeState(workspace: CpqWorkspace): WorkflowRuntimeState {
+function createDefaultStarterPreConfiguration(): StarterPreConfiguration {
   return {
-    activeStepId: workspace.ui.active_workflow_step_id,
-    workflowCompleted: workspace.ui.workflow_completed,
+    customer_name: "",
+    collection_name: "",
+    quote_year: "",
+    sequence_code: "",
+    item_name: "",
+    confirmation_notes: "",
   };
 }
 
 /**
- * Generates a stable seeded workspace for first-run and test seeding.
+ * THIS IS SAMPLE-ONLY WORKSPACE DATA. DO NOT REUSE THESE VALUES FOR REAL CUSTOMERS.
+ * THIS IS MOCK WORKSPACE DATA. REMOVE IT AND RE-ADD THE REAL REQUEST DATA WHEN NEEDED.
  */
 export function createDefaultCpqWorkspace(): CpqWorkspace {
   const defaultWorkflowStepId = getDefaultWorkflowStepId();
@@ -401,8 +380,8 @@ export function createDefaultCpqWorkspace(): CpqWorkspace {
   return {
     account: {
       id: "acct-dr-inc",
-      name: "Starter Workspace",
-      subtitle: "Single-page CPQ starter",
+      name: "Example Workspace",
+      subtitle: "Single-page CPQ example",
       status: "Draft",
       contact_person: null,
       email: null,
@@ -414,8 +393,8 @@ export function createDefaultCpqWorkspace(): CpqWorkspace {
       {
         id: "est-001002",
         estimate_number: "EST-001002",
-        account_name: "Starter Workspace",
-        project_name: "Starter Configured Item",
+        account_name: "Example Workspace",
+        project_name: "Example Configured Item",
         revision_label: "1.0",
         region: "Default",
         status: "draft",
@@ -457,8 +436,8 @@ export function createDefaultCpqWorkspace(): CpqWorkspace {
     packages: [
       {
         id: "pkg-crane-package",
-        name: "Starter Crane Package",
-        description: "Under Running SG starter package",
+        name: "Example Crane Package",
+        description: "Under Running SG example package",
         discount_rate: 0.05,
         items: [{ item_id: "item-under-running-sg", quantity: 1 }],
       },
@@ -471,6 +450,16 @@ export function createDefaultCpqWorkspace(): CpqWorkspace {
       theme_mode: "light",
     },
     active_estimate_id: "est-001002",
+  };
+}
+
+/**
+ * Adapts persisted UI state into the pure workflow engine runtime contract.
+ */
+function getWorkflowRuntimeState(workspace: CpqWorkspace): WorkflowRuntimeState {
+  return {
+    activeStepId: workspace.ui.active_workflow_step_id,
+    workflowCompleted: workspace.ui.workflow_completed,
   };
 }
 
@@ -497,7 +486,7 @@ export function getEstimateById(
 }
 
 /**
- * Derives workflow sections by combining starter workflow definitions with the
+ * Derives workflow sections by combining example workflow definitions with the
  * persisted workflow position.
  */
 export function getWorkflowSections(workspace: CpqWorkspace): WorkflowSection[] {
@@ -562,7 +551,7 @@ export function getCurrentWorkflowStep(
 }
 
 /**
- * Returns the next step in the starter process, crossing stage boundaries when
+ * Returns the next step in the example process, crossing stage boundaries when
  * needed so page-level proceed actions can act like a workflow engine.
  */
 export function getNextWorkflowStep(
@@ -580,7 +569,7 @@ export function getNextWorkflowStep(
 
 /**
  * Exposes workflow completion so routes can distinguish "final step" from
- * "starter flow complete."
+ * "example flow complete."
  */
 export function isWorkflowComplete(workspace: CpqWorkspace): boolean {
   return isWorkflowEngineComplete(getWorkflowRuntimeState(workspace));
@@ -755,7 +744,7 @@ export function getWorkflowProgress(workspace: CpqWorkspace): {
 }
 
 /**
- * Formats currency values consistently across the mocked CPQ starter.
+ * Formats currency values consistently across the example CPQ workflow.
  */
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -774,7 +763,7 @@ export function formatPercent(value: number): string {
 }
 
 /**
- * Keeps the starter quote code readable even before users fill every field.
+ * Keeps the example quote code readable even before users fill every field.
  */
 export function formatStarterQuoteCode(
   starterPreConfiguration: StarterPreConfiguration | undefined,
@@ -818,7 +807,7 @@ export function canEditWorkspace(role: UserRole): boolean {
 }
 
 /**
- * Approval remains available to approvers and admins in the mock workflow.
+ * Approval remains available to approvers and admins in the example workflow.
  */
 export function canApproveEstimate(role: UserRole): boolean {
   return role === "admin" || role === "approver";
@@ -1119,7 +1108,7 @@ export function updateAccountFieldInWorkspace(
 }
 
 /**
- * Persists the narrow starter pre-configuration form and mirrors the most
+ * Persists the narrow example pre-configuration form and mirrors the most
  * important CPQ identifiers back into the seeded account and estimate records.
  */
 export function updateStarterPreConfigurationFieldInWorkspace(
@@ -1133,11 +1122,11 @@ export function updateStarterPreConfigurationFieldInWorkspace(
     [field]: value,
   };
   const nextCustomerName =
-    nextStarterPreConfiguration.customer_name.trim() || "Starter Workspace";
+    nextStarterPreConfiguration.customer_name.trim() || "Example Workspace";
   const nextCollectionName =
-    nextStarterPreConfiguration.collection_name.trim() || "Single-page CPQ starter";
+    nextStarterPreConfiguration.collection_name.trim() || "Single-page CPQ example";
   const nextItemName =
-    nextStarterPreConfiguration.item_name.trim() || "Starter Configured Item";
+    nextStarterPreConfiguration.item_name.trim() || "Example Configured Item";
   const nextQuoteCode = formatStarterQuoteCode(nextStarterPreConfiguration);
   const nextConfirmationNotes = nextStarterPreConfiguration.confirmation_notes;
 
@@ -1181,7 +1170,7 @@ export function updateEstimateNotesInWorkspace(
 }
 
 /**
- * Stores the intake prompt so the configure screen behaves like a working mock.
+ * Stores the intake prompt so the configure screen behaves like a working sample.
  */
 export function updateEstimateIntakePromptInWorkspace(
   workspace: CpqWorkspace,
@@ -1196,9 +1185,9 @@ export function updateEstimateIntakePromptInWorkspace(
 }
 
 /**
- * Adds a mocked attachment record to the estimate files tab.
+ * THIS IS SAMPLE FILE DATA ONLY. DO NOT TREAT IT AS REAL CUSTOMER CONTENT.
  */
-export function addMockAttachmentToEstimateInWorkspace(
+export function addExampleAttachmentToEstimateInWorkspace(
   workspace: CpqWorkspace,
   estimateId: string,
 ): CpqWorkspace {
@@ -1207,8 +1196,8 @@ export function addMockAttachmentToEstimateInWorkspace(
     attachments: [
       {
         id: createWorkspaceId("att"),
-        file_name: `mock-file-${estimate.attachments.length + 1}.pdf`,
-        kind: "Mock Upload",
+        file_name: `example-file-${estimate.attachments.length + 1}.pdf`,
+        kind: "Example Upload",
         added_at: new Date().toISOString(),
       },
       ...estimate.attachments,
@@ -1218,7 +1207,7 @@ export function addMockAttachmentToEstimateInWorkspace(
 }
 
 /**
- * Removes a mocked attachment from the estimate files tab.
+ * Removes an example attachment from the estimate files tab.
  */
 export function removeAttachmentFromEstimateInWorkspace(
   workspace: CpqWorkspace,
@@ -1235,8 +1224,7 @@ export function removeAttachmentFromEstimateInWorkspace(
 }
 
 /**
- * Creates a fresh division estimate so the dashboard CTA has a real mocked
- * outcome instead of a dead button.
+ * THIS IS EXAMPLE-ONLY DIVISION DATA. DO NOT REUSE IT FOR REAL RECORD CREATION.
  */
 export function createDivisionInWorkspace(
   workspace: CpqWorkspace,
@@ -1256,7 +1244,7 @@ export function createDivisionInWorkspace(
     region: "Default",
     status: "draft",
     workflow_stage: defaultWorkflowStepLabel,
-    notes: "Starter record created from the shell reset/test utilities.",
+    notes: "Example record created from the shell reset/test utilities.",
     intake_prompt: "",
     build_selections: [],
     modifiers: [],
@@ -1297,7 +1285,7 @@ export function setActiveEstimateInWorkspace(
 }
 
 /**
- * Updates the mocked role switcher used by the header.
+ * Updates the example role switcher used by the header.
  */
 export function setActiveRoleInWorkspace(
   workspace: CpqWorkspace,

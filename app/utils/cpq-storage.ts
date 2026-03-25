@@ -1,7 +1,8 @@
+// THIS FILE ONLY PERSISTS MOCK SAMPLE WORKSPACE STATE. REMOVE IT AND RE-ADD THE REAL REQUEST LOGIC WHEN NEEDED.
 import { useEffect, useMemo, useState } from "react";
 import {
   addCatalogItemToEstimateInWorkspace,
-  addMockAttachmentToEstimateInWorkspace,
+  addExampleAttachmentToEstimateInWorkspace,
   addPackageToEstimateInWorkspace,
   advanceWorkflowInWorkspace,
   createDefaultCpqWorkspace,
@@ -44,11 +45,15 @@ let rolePreviewOverride: UserRole | null = null;
 const rolePreviewListeners = new Set<(role: UserRole | null) => void>();
 
 /**
- * Normalizes older local workspace payloads so starter upgrades can add
- * workflow fields without immediately breaking persisted browser state.
+ * THIS ONLY NORMALIZES SAMPLE WORKSPACE STORAGE. DO NOT USE IT FOR REAL CUSTOMER DATA.
+ * THIS IS MOCK STORAGE COMPATIBILITY ONLY. REMOVE IT AND RE-ADD THE REAL REQUEST LOGIC WHEN NEEDED.
  */
 function normalizeWorkspaceShape(workspace: CpqWorkspace): CpqWorkspace {
   const defaultWorkflowStepId = getDefaultWorkflowStepId();
+  const normalizedWorkflowStepId =
+    workspace.ui.active_workflow_step_id === "starter-scope"
+      ? "scope-review"
+      : workspace.ui.active_workflow_step_id || defaultWorkflowStepId;
 
   return {
     ...workspace,
@@ -64,8 +69,7 @@ function normalizeWorkspaceShape(workspace: CpqWorkspace): CpqWorkspace {
         workspace.starter_pre_configuration.confirmation_notes ?? "",
     },
     ui: {
-      active_workflow_step_id:
-        workspace.ui.active_workflow_step_id || defaultWorkflowStepId,
+      active_workflow_step_id: normalizedWorkflowStepId,
       workflow_completed: workspace.ui.workflow_completed ?? false,
       active_role: workspace.ui.active_role,
       theme_mode: workspace.ui.theme_mode,
@@ -117,7 +121,7 @@ interface UseCpqWorkspaceStorageResult {
     quantity: number,
   ) => void;
   removeSelection: (estimateId: string, selectionId: string) => void;
-  addMockAttachment: (estimateId: string) => void;
+  addExampleAttachment: (estimateId: string) => void;
   removeAttachment: (estimateId: string, attachmentId: string) => void;
   updateAccountField: (
     field: keyof Pick<
@@ -155,6 +159,7 @@ export function seedCpqWorkspaceInStorage(workspace?: CpqWorkspace): void {
   }
 
   const value = workspace ?? createDefaultCpqWorkspace();
+  // THIS SEEDED WORKSPACE IS SAMPLE-ONLY DATA. DO NOT TREAT IT AS A REAL CUSTOMER PAYLOAD.
   window.localStorage.setItem(
     CPQ_WORKSPACE_STORAGE_KEY,
     JSON.stringify(value),
@@ -339,16 +344,16 @@ export function useCpqWorkspaceStorage(): UseCpqWorkspaceStorageResult {
   };
 
   /**
-   * Adds a mock file record to the selected estimate.
+   * Adds an example file record to the selected estimate.
    */
-  const addMockAttachment = (estimateId: string): void => {
+  const addExampleAttachment = (estimateId: string): void => {
     commitWorkspaceUpdate((currentWorkspace) =>
-      addMockAttachmentToEstimateInWorkspace(currentWorkspace, estimateId),
+      addExampleAttachmentToEstimateInWorkspace(currentWorkspace, estimateId),
     );
   };
 
   /**
-   * Removes a mock file record from the selected estimate.
+   * Removes an example file record from the selected estimate.
    */
   const removeAttachment = (estimateId: string, attachmentId: string): void => {
     commitWorkspaceUpdate((currentWorkspace) =>
@@ -392,7 +397,7 @@ export function useCpqWorkspaceStorage(): UseCpqWorkspaceStorageResult {
   };
 
   /**
-   * Creates a new mocked division/opportunity pair and returns its estimate id.
+   * Creates a new example division/opportunity pair and returns its estimate id.
    */
   const createDivision = (): string => {
     let createdEstimateId = "";
@@ -426,7 +431,7 @@ export function useCpqWorkspaceStorage(): UseCpqWorkspaceStorageResult {
   };
 
   /**
-   * Advances the mocked workflow to the next step.
+   * Advances the example workflow to the next step.
    */
   const advanceWorkflow = (): void => {
     commitWorkspaceUpdate((currentWorkspace) =>
@@ -463,7 +468,7 @@ export function useCpqWorkspaceStorage(): UseCpqWorkspaceStorageResult {
     addPackage,
     updateSelectionQuantity,
     removeSelection,
-    addMockAttachment,
+    addExampleAttachment,
     removeAttachment,
     updateAccountField,
     updateStarterPreConfigurationField,

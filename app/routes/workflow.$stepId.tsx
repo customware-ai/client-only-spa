@@ -1,3 +1,4 @@
+// THIS ROUTE RENDERS MOCK SAMPLE WORKFLOW UI ONLY. REMOVE IT AND RE-ADD THE REAL REQUEST FLOW WHEN NEEDED.
 import { useEffect, type ChangeEvent, type ReactElement } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
 import { Minus, Package2, Plus, ShieldCheck } from "lucide-react";
@@ -35,9 +36,10 @@ function getWorkflowStepPath(stepId: string): string {
 
 /**
  * Keeps the page copy tied to the route-driven step engine instead of a
- * single static starter surface.
+ * single static example surface.
  */
 function getStepContent(stepId: string): StepContent {
+  // THIS ROUTE RENDERS MOCK SAMPLE COPY ONLY. REMOVE IT AND RE-ADD THE REAL REQUEST FLOW WHEN NEEDED.
   switch (stepId) {
     case "customer-collection":
       return {
@@ -49,13 +51,13 @@ function getStepContent(stepId: string): StepContent {
       return {
         title: "Quote Identity",
         description:
-          "Set the quote year, sequence, and item label that will identify this starter quote.",
+          "Set the quote year, sequence, and item label that will identify this example quote.",
       };
-    case "starter-scope":
+    case "scope-review":
       return {
-        title: "Starter Scope",
+        title: "Scope Review",
         description:
-          "Load the starter package or add the compliance line so the quote has real commercial scope.",
+          "Load the example package or add the compliance line so the quote has real commercial scope.",
       };
     default:
       return {
@@ -67,7 +69,7 @@ function getStepContent(stepId: string): StepContent {
 }
 
 /**
- * Validates whether the current step has enough starter data to proceed.
+ * Validates whether the current step has enough example data to proceed.
  */
 function isStepReady(
   stepId: string,
@@ -86,7 +88,7 @@ function isStepReady(
         starterPreConfiguration.sequence_code.trim().length > 0 &&
         starterPreConfiguration.item_name.trim().length > 0
       );
-    case "starter-scope":
+    case "scope-review":
       return lineItems.length > 0;
     default:
       return false;
@@ -102,7 +104,7 @@ function getStepReadinessMessage(
   workflowCompleted: boolean,
 ): string {
   if (workflowCompleted) {
-    return "This starter workflow is complete.";
+    return "This example workflow is complete.";
   }
 
   if (ready) {
@@ -114,8 +116,8 @@ function getStepReadinessMessage(
       return "Enter both the customer name and collection.";
     case "quote-identity":
       return "Enter the quote year, sequence, and item name.";
-    case "starter-scope":
-      return "Add at least one starter line before proceeding.";
+    case "scope-review":
+      return "Add at least one example line before proceeding.";
     default:
       return "Complete the current step before proceeding.";
   }
@@ -156,7 +158,7 @@ function renderCustomerCollectionStep(
 }
 
 /**
- * Renders the quote identity inputs that define the starter quote code.
+ * Renders the quote identity inputs that define the example quote code.
  */
 function renderQuoteIdentityStep(
   starterPreConfiguration: StarterPreConfiguration,
@@ -211,7 +213,7 @@ function renderQuoteIdentityStep(
 }
 
 /**
- * Renders the starter scope action rows and current line items.
+ * Renders the example scope action rows and current line items.
  */
 function renderStarterScopeStep(
   isEditable: boolean,
@@ -287,7 +289,7 @@ function renderStarterScopeStep(
 
         {lineItems.length === 0 ? (
           <div className="px-4 py-6 text-sm text-stone-500 dark:text-zinc-400">
-            Load the package or add the compliance line to create starter scope.
+            Load the package or add the compliance line to create example scope.
           </div>
         ) : (
           <div className="divide-y divide-stone-200 dark:divide-zinc-800">
@@ -484,7 +486,7 @@ export default function WorkflowStepPage(): ReactElement {
   };
 
   /**
-   * The starter package action seeds the first commercial line bundle.
+   * The example package action seeds the first commercial line bundle.
    */
   const handleLoadStarterPackage = (): void => {
     if (!activeEstimate || !starterPackage) {
@@ -526,12 +528,12 @@ export default function WorkflowStepPage(): ReactElement {
         handleStarterFieldChange,
       );
       break;
-    case "starter-scope":
+    case "scope-review":
       stepBody = renderStarterScopeStep(
         isEditable,
-        starterPackage?.name ?? "Starter package",
+        starterPackage?.name ?? "Example package",
         starterPackage?.description ??
-          "Use one starter package so this template starts with real commercial scope.",
+          "Use one example package so this template starts with real commercial scope.",
         complianceAddOn?.name ?? "Compliance add-on",
         complianceAddOn?.description ??
           "Add one standalone line so quantity edits and pricing review are visible.",
@@ -703,7 +705,7 @@ export default function WorkflowStepPage(): ReactElement {
 
               {workflowCompleted && (
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
-                  Starter workflow complete.
+                  Example workflow complete.
                 </div>
               )}
             </div>
@@ -711,7 +713,7 @@ export default function WorkflowStepPage(): ReactElement {
 
           {!isEditable && (
             <section className="rounded-lg border border-stone-200 bg-card px-4 py-4 text-sm text-stone-500 dark:border-zinc-800 dark:text-zinc-400">
-              {workspace.ui.active_role} can review this starter workflow, but
+              {workspace.ui.active_role} can review this example workflow, but
               only admin and estimator can edit or proceed.
             </section>
           )}
