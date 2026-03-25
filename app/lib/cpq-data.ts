@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   advanceWorkflow as advanceWorkflowState,
   getCurrentWorkflowStepMeta,
+  getFirstWorkflowStepId,
   getNextWorkflowStepMeta,
   getWorkflowProgress as getWorkflowEngineProgress,
   getWorkflowStepMetaById as getWorkflowEngineStepMetaById,
