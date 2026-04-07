@@ -1,29 +1,23 @@
 import type { ReactElement } from "react";
-import { Navigate } from "react-router";
-import { Skeleton } from "~/components/ui/Skeleton";
-import { useCpqWorkspaceStorage } from "~/utils/cpq-storage";
+
+import Demo from "~/components/Demo";
 
 /**
- * Redirects the shell root to the currently active workflow step so the shared
- * nav can always point at one stable entry URL while the step engine owns the
- * real page surfaces.
+ * Reference-only mount for the shipped shadcn demo surface.
+ *
+ * IMPORTANT:
+ * Delete this component mount before implementing the real product task flow.
+ * It exists only as a code/reference catalog for the shipped shadcn components.
  */
 export default function IndexPage(): ReactElement {
-  const { workspace, isHydrated } = useCpqWorkspaceStorage();
-
-  if (!isHydrated) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-12 w-80 rounded-lg" />
-        <Skeleton className="h-64 w-full rounded-lg" />
-      </div>
-    );
-  }
-
   return (
-    <Navigate
-      replace
-      to={`/workflow/${workspace.ui.active_workflow_step_id}`}
-    />
+    <>
+      {/*
+        REFERENCE ONLY:
+        This Demo mount exists only to expose the shipped shadcn component set for code reference.
+        Delete <Demo /> before implementing the actual product task flow on the index page.
+      */}
+      <Demo />
+    </>
   );
 }

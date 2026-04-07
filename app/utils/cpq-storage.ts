@@ -46,14 +46,16 @@ const rolePreviewListeners = new Set<(role: UserRole | null) => void>();
 function normalizeWorkspaceShape(workspace: CpqWorkspace): CpqWorkspace {
   const defaultWorkflowStepId = getDefaultWorkflowStepId();
   const normalizedWorkflowStepId =
-    workspace.ui.active_workflow_step_id === "customer-collection"
-      ? "step-1"
-      : workspace.ui.active_workflow_step_id === "quote-identity"
-        ? "step-2"
-        : workspace.ui.active_workflow_step_id === "scope-review" ||
-            workspace.ui.active_workflow_step_id === "starter-scope"
+    defaultWorkflowStepId === "unconfigured"
+      ? defaultWorkflowStepId
+      : workspace.ui.active_workflow_step_id === "customer-collection"
+        ? "step-1"
+        : workspace.ui.active_workflow_step_id === "quote-identity"
           ? "step-2"
-          : workspace.ui.active_workflow_step_id || defaultWorkflowStepId;
+          : workspace.ui.active_workflow_step_id === "scope-review" ||
+              workspace.ui.active_workflow_step_id === "starter-scope"
+            ? "step-2"
+            : workspace.ui.active_workflow_step_id || defaultWorkflowStepId;
 
   return {
     ...workspace,

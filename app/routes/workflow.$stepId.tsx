@@ -205,7 +205,7 @@ export default function WorkflowStepPage(): ReactElement {
     return (
       <Navigate
         replace
-        to={getWorkflowStepPath(workspace.ui.active_workflow_step_id)}
+        to="/"
       />
     );
   }

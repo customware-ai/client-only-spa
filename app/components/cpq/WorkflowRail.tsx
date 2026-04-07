@@ -206,8 +206,13 @@ export function WorkflowRail({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
-        <div className="space-y-3">
-          {workflowSections.map((section) => {
+        {workflowSections.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-stone-200 px-4 py-4 text-sm text-stone-500 dark:border-zinc-800 dark:text-zinc-400">
+            No workflow steps are configured.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {workflowSections.map((section) => {
             const isExpanded = expandedSectionIds.has(section.id);
             const sectionContentId = `workflow-section-${section.id}`;
 
@@ -289,8 +294,9 @@ export function WorkflowRail({
                 </ol>
               </section>
             );
-          })}
-        </div>
+            })}
+          </div>
+        )}
       </div>
 
       <div className="border-t border-stone-200 px-4 py-4 dark:border-zinc-800">

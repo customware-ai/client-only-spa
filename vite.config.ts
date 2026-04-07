@@ -16,6 +16,9 @@ const reactCompilerBabelOptions = {
 } as Parameters<typeof babel>[0];
 
 export default defineConfig({
+  preview: {
+    port: 3000,
+  },
   plugins: [
     tailwindcss(),
     reactRouter(),

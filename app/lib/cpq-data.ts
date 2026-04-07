@@ -303,23 +303,7 @@ interface StarterWorkflowStageDefinition
 }
 
 function createBaseWorkflowDefinition(): StarterWorkflowStageDefinition[] {
-  return [
-    {
-      id: "pre-configuration",
-      title: "Pre-Configuration",
-      icon_key: "capture",
-      steps: [
-        {
-          id: "step-1",
-          label: "Primary Details",
-        },
-        {
-          id: "step-2",
-          label: "Reference Details",
-        },
-      ],
-    },
-  ];
+  return [];
 }
 
 /**
@@ -327,7 +311,7 @@ function createBaseWorkflowDefinition(): StarterWorkflowStageDefinition[] {
  * duplicate the route order.
  */
 export function getDefaultWorkflowStepId(): string {
-  return getFirstWorkflowStepId(createBaseWorkflowDefinition()) ?? "step-1";
+  return getFirstWorkflowStepId(createBaseWorkflowDefinition()) ?? "unconfigured";
 }
 
 /**
@@ -339,7 +323,7 @@ function getDefaultWorkflowStepLabel(): string {
     getCurrentWorkflowStepMeta(createBaseWorkflowDefinition(), {
       activeStepId: getDefaultWorkflowStepId(),
       workflowCompleted: false,
-    })?.stepLabel ?? "Primary Details"
+    })?.stepLabel ?? "Unconfigured"
   );
 }
 
