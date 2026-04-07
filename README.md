@@ -4,6 +4,10 @@ This repository is a static React Router v7 SPA template for CPQ-style workflow 
 
 It includes a workflow shell, local-first workspace state, shared UI primitives, and SPA route structure.
 
+> **⚠️ Important**: This is a **template repository** showcasing patterns and structure, not a feature-complete product.
+
+> **Required reading**: Review [AGENTS.md](./AGENTS.md) before development for commands, coding standards, and architecture rules.
+
 ## Included
 
 - React Router SPA routing under `app/routes.ts`
