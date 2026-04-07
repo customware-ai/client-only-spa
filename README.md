@@ -11,7 +11,7 @@ It keeps the workflow shell, local-first workspace state, shared UI primitives, 
 - Shared UI components in `app/components/ui`
 - A root-mounted demo component for shipped shadcn component reference
 - Tailwind + Vite build setup
-- TypeScript, oxlint, and route type generation
+- TypeScript native preview (`tsgo`), oxlint, and route type generation
 
 ## What Was Removed
 
@@ -29,6 +29,8 @@ npm run build
 npm run preview
 npm run check
 ```
+
+`npm run check` uses `tsgo` from `@typescript/native-preview` for type-checking.
 
 ## Project Structure
 
