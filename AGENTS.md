@@ -115,7 +115,7 @@ npm run check
 Notes:
 
 - `npm run typecheck` uses `tsgo` from `@typescript/native-preview`.
-- `npm run start` builds first, then serves the built SPA preview.
+- `npm run start` serves the existing `build/client` output through the repo-local Node static server in `start.js`.
 
 ---
 
