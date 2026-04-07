@@ -11,9 +11,7 @@ const localStorageSubscribers = new Map<string, Set<() => void>>();
 /**
  * Allowed updater contract for the generic localStorage setter.
  */
-type LocalStorageStateUpdater<TValue> =
-  | TValue
-  | ((previousValue: TValue) => TValue);
+type LocalStorageStateUpdater<TValue> = TValue | ((previousValue: TValue) => TValue);
 
 /**
  * Internal snapshot shape used to pair parsed data with the exact raw storage
@@ -34,10 +32,7 @@ interface LocalStorageStoreSnapshot<TValue> extends LocalStorageSnapshot<TValue>
   isHydrated: boolean;
 }
 
-function createLocalStorageError(
-  message: string,
-  error: unknown,
-): Error {
+function createLocalStorageError(message: string, error: unknown): Error {
   if (error instanceof Error) {
     return new Error(message, { cause: error });
   }
@@ -45,47 +40,31 @@ function createLocalStorageError(
   return new Error(message);
 }
 
-function getLocalStorageItem(
-  key: string,
-): Result<string | null, Error> {
+function getLocalStorageItem(key: string): Result<string | null, Error> {
   return fromThrowable(
     (storageKey: string): string | null => window.localStorage.getItem(storageKey),
     (error: unknown): Error =>
-      createLocalStorageError(
-        `Failed to read localStorage key "${key}".`,
-        error,
-      ),
+      createLocalStorageError(`Failed to read localStorage key "${key}".`, error),
   )(key);
 }
 
-function setLocalStorageItem(
-  key: string,
-  value: string,
-): Result<void, Error> {
+function setLocalStorageItem(key: string, value: string): Result<void, Error> {
   return fromThrowable(
     (storageKey: string, storageValue: string): void => {
       window.localStorage.setItem(storageKey, storageValue);
     },
     (error: unknown): Error =>
-      createLocalStorageError(
-        `Failed to write localStorage key "${key}".`,
-        error,
-      ),
+      createLocalStorageError(`Failed to write localStorage key "${key}".`, error),
   )(key, value);
 }
 
-function removeLocalStorageItem(
-  key: string,
-): Result<void, Error> {
+function removeLocalStorageItem(key: string): Result<void, Error> {
   return fromThrowable(
     (storageKey: string): void => {
       window.localStorage.removeItem(storageKey);
     },
     (error: unknown): Error =>
-      createLocalStorageError(
-        `Failed to remove localStorage key "${key}".`,
-        error,
-      ),
+      createLocalStorageError(`Failed to remove localStorage key "${key}".`, error),
   )(key);
 }
 
@@ -93,29 +72,19 @@ function removeLocalStorageItem(
  * Safely serializes a localStorage value for persistence.
  * JSON is the shared storage format for the generic hook.
  */
-function serializeLocalStorageValue<TValue>(
-  value: TValue,
-): Result<string, Error> {
+function serializeLocalStorageValue<TValue>(value: TValue): Result<string, Error> {
   return fromThrowable(
     (input: TValue): string => JSON.stringify(input),
     (error: unknown): Error =>
-      createLocalStorageError(
-        "Failed to serialize localStorage value.",
-        error,
-      ),
+      createLocalStorageError("Failed to serialize localStorage value.", error),
   )(value);
 }
 
-function parseLocalStorageValue<TValue>(
-  rawValue: string,
-): Result<TValue, Error> {
+function parseLocalStorageValue<TValue>(rawValue: string): Result<TValue, Error> {
   return fromThrowable(
     (input: string): TValue => JSON.parse(input) as TValue,
     (error: unknown): Error =>
-      createLocalStorageError(
-        "Failed to parse localStorage value.",
-        error,
-      ),
+      createLocalStorageError("Failed to parse localStorage value.", error),
   )(rawValue);
 }
 
@@ -199,11 +168,6 @@ export function clearLocalStorageKey(key: string): void {
 }
 
 /**
- * Generic localStorage hook with loop protection.
- * The hook keeps storage and React state synchronized while ignoring echoed
- * reads that carry the same serialized snapshot a local write just produced.
- */
-/**
  * Usage:
  * const [value, setValue, isHydrated] = useLocalStorage("key", defaultValue);
  *
@@ -267,18 +231,11 @@ export function useLocalStorage<TValue>(
       (value) => value,
       () => null,
     );
-    if (
-      clientSnapshotRef.current.isHydrated &&
-      clientSnapshotRef.current.rawValue === rawValue
-    ) {
+    if (clientSnapshotRef.current.isHydrated && clientSnapshotRef.current.rawValue === rawValue) {
       return clientSnapshotRef.current;
     }
 
-    clientSnapshotRef.current = createStoreSnapshot(
-      rawValue,
-      defaultValueRef.current,
-      true,
-    );
+    clientSnapshotRef.current = createStoreSnapshot(rawValue, defaultValueRef.current, true);
 
     return clientSnapshotRef.current;
   }, [key]);
@@ -287,24 +244,13 @@ export function useLocalStorage<TValue>(
    * Returns the server-safe snapshot used during the prerender and hydration
    * fallback pass. This intentionally reports `isHydrated: false`.
    */
-  const getServerSnapshot = useCallback(
-    (): LocalStorageStoreSnapshot<TValue> => {
-      serverSnapshotRef.current = createStoreSnapshot(
-        null,
-        defaultValueRef.current,
-        false,
-      );
+  const getServerSnapshot = useCallback((): LocalStorageStoreSnapshot<TValue> => {
+    serverSnapshotRef.current = createStoreSnapshot(null, defaultValueRef.current, false);
 
-      return serverSnapshotRef.current;
-    },
-    [],
-  );
+    return serverSnapshotRef.current;
+  }, []);
 
-  const storeSnapshot = useSyncExternalStore(
-    subscribe,
-    getSnapshot,
-    getServerSnapshot,
-  );
+  const storeSnapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   /**
    * Persists a new value using the latest in-memory snapshot.
