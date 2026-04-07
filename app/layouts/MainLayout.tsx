@@ -99,6 +99,11 @@ function MainLayoutShell(): ReactElement {
       href: "/",
       matches: (pathname: string): boolean => pathname === "/",
     },
+    {
+      label: "UI Lab",
+      href: "/shadcn",
+      matches: (pathname: string): boolean => pathname.startsWith("/shadcn"),
+    },
   ];
 
   /**

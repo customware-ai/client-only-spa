@@ -9,6 +9,7 @@ It keeps the workflow shell, local-first workspace state, shared UI primitives, 
 - React Router SPA routing under `app/routes.ts`
 - CPQ workflow shell and local storage workspace state
 - Shared UI components in `app/components/ui`
+- A `/shadcn` catalog route that showcases the shipped component set
 - Tailwind + Vite build setup
 - TypeScript, oxlint, and route type generation
 
@@ -52,6 +53,7 @@ app/
 - Workspace data is stored in browser local storage.
 - Workflow progression is derived from the shared workflow engine in `app/lib/workflow-engine.ts`.
 - Frontend runtime errors are logged to the browser console by default. If you want remote logging later, wire an endpoint into `app/utils/error-logger.ts`.
+- The `/shadcn` route is a client-side component lab used for UI QA and regression checks.
 
 ## Notes
 

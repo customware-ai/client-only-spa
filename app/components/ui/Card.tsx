@@ -1,3 +1,5 @@
+"use client"
+
 import * as React from "react"
 
 import { cn } from "~/lib/utils"
@@ -7,7 +9,7 @@ function Card({ className, ...props }: React.ComponentProps<"div">): React.React
     <div
       data-slot="card"
       className={cn(
-        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border-0 py-6 shadow-xs ring-1 ring-stone-200/80 dark:shadow-sm dark:ring-zinc-800/80",
+        "bg-card text-card-foreground flex min-w-0 flex-col gap-6 rounded-xl border-0 py-6 shadow-xs ring-1 ring-stone-200/80 dark:shadow-sm dark:ring-zinc-800/80",
         className
       )}
       {...props}

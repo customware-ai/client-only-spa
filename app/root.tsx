@@ -16,6 +16,7 @@ import "./app.css";
 import { logFrontendError } from "./utils/error-logger";
 import { Card, CardContent } from "./components/ui/Card";
 import { Button } from "./components/ui/Button";
+import { Toaster } from "./components/ui/toaster";
 
 /**
  * Inline fallback styles ensure the initial loading treatment is visible before
@@ -376,8 +377,9 @@ export function Layout({
           }}
         />
       </head>
-      <body className="bg-background text-foreground antialiased">
+      <body className="overflow-x-hidden bg-background text-foreground antialiased">
         {children}
+        <Toaster />
         <ScrollRestoration />
         <Scripts />
       </body>

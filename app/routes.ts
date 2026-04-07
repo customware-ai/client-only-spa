@@ -27,6 +27,7 @@ attachGlobalFrontendErrorHandlers();
 export default [
   layout("layouts/MainLayout.tsx", [
     index("routes/index.tsx"),
+    route("shadcn", "routes/shadcn.tsx"),
     route("workflow/:stepId", "routes/workflow.$stepId.tsx"),
   ]),
 ] satisfies RouteConfig;
