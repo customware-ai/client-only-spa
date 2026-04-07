@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * REFERENCE-ONLY COMPONENT
+ *
+ * Delete this file before implementing the actual user request or product task.
+ * It exists only as a local shadcn component reference surface for this template.
+ */
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   flexRender,
