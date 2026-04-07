@@ -45,6 +45,50 @@ function createLocalStorageError(
   return new Error(message);
 }
 
+function getLocalStorageItem(
+  key: string,
+): Result<string | null, Error> {
+  return fromThrowable(
+    (storageKey: string): string | null => window.localStorage.getItem(storageKey),
+    (error: unknown): Error =>
+      createLocalStorageError(
+        `Failed to read localStorage key "${key}".`,
+        error,
+      ),
+  )(key);
+}
+
+function setLocalStorageItem(
+  key: string,
+  value: string,
+): Result<void, Error> {
+  return fromThrowable(
+    (storageKey: string, storageValue: string): void => {
+      window.localStorage.setItem(storageKey, storageValue);
+    },
+    (error: unknown): Error =>
+      createLocalStorageError(
+        `Failed to write localStorage key "${key}".`,
+        error,
+      ),
+  )(key, value);
+}
+
+function removeLocalStorageItem(
+  key: string,
+): Result<void, Error> {
+  return fromThrowable(
+    (storageKey: string): void => {
+      window.localStorage.removeItem(storageKey);
+    },
+    (error: unknown): Error =>
+      createLocalStorageError(
+        `Failed to remove localStorage key "${key}".`,
+        error,
+      ),
+  )(key);
+}
+
 /**
  * Safely serializes a localStorage value for persistence.
  * JSON is the shared storage format for the generic hook.
@@ -147,7 +191,10 @@ export function clearLocalStorageKey(key: string): void {
     return;
   }
 
-  window.localStorage.removeItem(key);
+  if (removeLocalStorageItem(key).isErr()) {
+    return;
+  }
+
   notifyLocalStorageSubscribers(key);
 }
 
@@ -216,7 +263,10 @@ export function useLocalStorage<TValue>(
       return serverSnapshotRef.current;
     }
 
-    const rawValue = window.localStorage.getItem(key);
+    const rawValue = getLocalStorageItem(key).match(
+      (value) => value,
+      () => null,
+    );
     if (
       clientSnapshotRef.current.isHydrated &&
       clientSnapshotRef.current.rawValue === rawValue
@@ -261,39 +311,45 @@ export function useLocalStorage<TValue>(
    * Functional updaters resolve against the current external-store snapshot so
    * callers always build on the latest known value.
    */
-  const setValue = (nextValue: LocalStorageStateUpdater<TValue>): void => {
-    if (typeof window === "undefined") {
-      return;
-    }
+  const setValue = useCallback(
+    (nextValue: LocalStorageStateUpdater<TValue>): void => {
+      if (typeof window === "undefined") {
+        return;
+      }
 
-    const currentSnapshot = clientSnapshotRef.current.isHydrated
-      ? clientSnapshotRef.current
-      : getSnapshot();
-    const resolvedValue =
-      typeof nextValue === "function"
-        ? (nextValue as (previousValue: TValue) => TValue)(currentSnapshot.value)
-        : nextValue;
-    const serializedValue = serializeLocalStorageValue(resolvedValue).match(
-      (value) => value,
-      () => null,
-    );
+      const currentSnapshot = clientSnapshotRef.current.isHydrated
+        ? clientSnapshotRef.current
+        : getSnapshot();
+      const resolvedValue =
+        typeof nextValue === "function"
+          ? (nextValue as (previousValue: TValue) => TValue)(currentSnapshot.value)
+          : nextValue;
+      const serializedValue = serializeLocalStorageValue(resolvedValue).match(
+        (value) => value,
+        () => null,
+      );
 
-    if (serializedValue === null) {
-      return;
-    }
+      if (serializedValue === null) {
+        return;
+      }
 
-    if (serializedValue === currentSnapshot.rawValue) {
-      return;
-    }
+      if (serializedValue === currentSnapshot.rawValue) {
+        return;
+      }
 
-    clientSnapshotRef.current = {
-      value: resolvedValue,
-      rawValue: serializedValue,
-      isHydrated: true,
-    };
-    window.localStorage.setItem(key, serializedValue);
-    notifyLocalStorageSubscribers(key);
-  };
+      if (setLocalStorageItem(key, serializedValue).isErr()) {
+        return;
+      }
+
+      clientSnapshotRef.current = {
+        value: resolvedValue,
+        rawValue: serializedValue,
+        isHydrated: true,
+      };
+      notifyLocalStorageSubscribers(key);
+    },
+    [getSnapshot, key],
+  );
 
   return [storeSnapshot.value, setValue, storeSnapshot.isHydrated] as const;
 }
