@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ResponsiveContainer, Tooltip } from "recharts"
+import { Tooltip } from "recharts"
 
 import { cn } from "~/lib/utils"
 
@@ -20,6 +20,10 @@ function ChartContainer({
 }: React.ComponentProps<"div"> & {
   config: ChartConfig
 }): React.ReactElement {
+  const chartElement = children as React.ReactElement<{
+    responsive?: boolean
+    style?: React.CSSProperties
+  }>
   const style = Object.fromEntries(
     Object.entries(config).map(([key, value]) => [`--color-${key}`, value.color]),
   ) as React.CSSProperties
@@ -28,11 +32,18 @@ function ChartContainer({
     <div
       data-slot="chart"
       style={style}
-      className={cn("h-[280px] min-w-0 w-full text-xs", className)}
+      className={cn("min-h-[200px] min-w-0 w-full text-xs", className)}
     >
-      <ResponsiveContainer width="100%" height="100%">
-        {children as React.ReactElement}
-      </ResponsiveContainer>
+      {React.isValidElement(chartElement)
+        ? React.cloneElement(chartElement, {
+            responsive: true,
+            style: {
+              width: "100%",
+              height: "100%",
+              ...chartElement.props.style,
+            },
+          })
+        : null}
     </div>
   )
 }

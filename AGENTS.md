@@ -183,7 +183,7 @@ Browser Storage
    - Shared primitives only in `app/components/ui/`
    - App-level reusable UI only in `app/components/`
    - Persistent client storage through `app/hooks/use-local-storage.ts`
-   - Workflow progression through `app/lib/workflow-engine.ts`
+   - Shared theme persistence through `app/lib/theme.ts`
    - Do not bypass these layers
 
 4. Error Handling Pattern
@@ -232,10 +232,10 @@ import { z } from "zod";
 export const WorkflowStepSchema = z.object({
   id: z.string(),
   title: z.string().min(1),
-  status: z.enum(["todo", "active", "done"]),
+  description: z.string().min(1),
 });
 
-export type WorkflowStep = z.infer<typeof WorkflowStepSchema>;
+export type TemplateSection = z.infer<typeof WorkflowStepSchema>;
 ```
 
 #### Error-Safe Shared Helpers
@@ -257,14 +257,15 @@ function mapResult<T>(result: Result<T, Error>, fallback: T): T {
 ```text
 app/
 ├── components/
-│   ├── cpq/
+│   ├── Demo.tsx
 │   └── ui/
 ├── hooks/
 │   └── use-local-storage.ts
 ├── layouts/
 │   └── MainLayout.tsx
 ├── lib/
-│   └── workflow-engine.ts
+│   ├── theme.ts
+│   └── utils.ts
 ├── routes/
 │   └── *.tsx
 ├── utils/

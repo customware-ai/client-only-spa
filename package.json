@@ -1,6 +1,6 @@
 {
   "name": "client-only-spa",
-  "description": "Client-only React Router SPA template for CPQ-style workflow experiences",
+  "description": "Client-only React Router SPA template with a generic shell and shared UI primitives",
   "type": "module",
   "scripts": {
     "dev": "react-router dev",

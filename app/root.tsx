@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import {
   isRouteErrorResponse,
   Links,
@@ -16,6 +16,7 @@ import "./app.css";
 import { logFrontendError } from "./utils/error-logger";
 import { Card, CardContent } from "./components/ui/Card";
 import { Button } from "./components/ui/Button";
+import { ThemeProvider } from "./components/theme-provider";
 import { Toaster } from "./components/ui/toaster";
 
 /**
@@ -310,11 +311,7 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
-export function Layout({
-  children,
-}: {
-  children: React.ReactNode;
-}): ReactElement {
+export function Layout({ children }: { children: ReactNode }): ReactElement {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -330,35 +327,32 @@ export function Layout({
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                var storageKey = 'cohesiv_cpq_workspace';
+                var storageKey = 'ui-theme';
                 var mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
                 function getThemeMode() {
                   try {
-                    var rawWorkspace = window.localStorage.getItem(storageKey);
-                    if (rawWorkspace) {
-                      var parsedWorkspace = JSON.parse(rawWorkspace);
-                      var persistedThemeMode = parsedWorkspace && parsedWorkspace.ui && parsedWorkspace.ui.theme_mode;
-                      if (persistedThemeMode === 'dark' || persistedThemeMode === 'light') {
-                        return persistedThemeMode;
-                      }
+                    var storedThemeMode = window.localStorage.getItem(storageKey);
+                    if (
+                      storedThemeMode === 'dark' ||
+                      storedThemeMode === 'light' ||
+                      storedThemeMode === 'system'
+                    ) {
+                      return storedThemeMode;
                     }
                   } catch (error) {
                     // Ignore malformed localStorage payloads and fall back to system theme.
                   }
 
-                  return mediaQuery.matches ? 'dark' : 'light';
+                  return 'system';
                 }
 
                 function applyThemeMode(themeMode) {
-                  document.documentElement.classList.toggle('dark', themeMode === 'dark');
-                  document.documentElement.style.colorScheme = themeMode;
-                  document.documentElement.style.backgroundColor = themeMode === 'dark'
-                    ? 'hsl(240 6% 10%)'
-                    : 'hsl(36 20% 96%)';
-                  document.documentElement.style.color = themeMode === 'dark'
-                    ? 'hsl(0 0% 95%)'
-                    : 'hsl(28 9% 17%)';
+                  var resolvedThemeMode = themeMode === 'system'
+                    ? (mediaQuery.matches ? 'dark' : 'light')
+                    : themeMode;
+                  document.documentElement.classList.remove('light', 'dark');
+                  document.documentElement.classList.add(resolvedThemeMode);
                 }
 
                 applyThemeMode(getThemeMode());
@@ -395,37 +389,20 @@ export function HydrateFallback(): ReactElement {
   return (
     <div className="hydrate-fallback">
       <div className="hydrate-fallback__stack">
-        <div
-          role="status"
-          aria-live="polite"
-          data-slot="hydrate-loader"
-          className="hydrate-loader"
-        >
+        <div role="status" aria-live="polite" data-slot="hydrate-loader" className="hydrate-loader">
           {/**
            * The shell uses a restrained document-style loader so the initial
            * hydration state feels consistent with the rest of the layout.
            */}
           <div aria-hidden="true" className="hydrate-loader__glow" />
-          <div
-            aria-hidden="true"
-            className="hydrate-loader__sheet hydrate-loader__sheet--back"
-          />
-          <div
-            aria-hidden="true"
-            className="hydrate-loader__sheet hydrate-loader__sheet--middle"
-          />
-          <div
-            aria-hidden="true"
-            className="hydrate-loader__sheet hydrate-loader__sheet--front"
-          >
+          <div aria-hidden="true" className="hydrate-loader__sheet hydrate-loader__sheet--back" />
+          <div aria-hidden="true" className="hydrate-loader__sheet hydrate-loader__sheet--middle" />
+          <div aria-hidden="true" className="hydrate-loader__sheet hydrate-loader__sheet--front">
             <div className="hydrate-loader__eyebrow" />
             <div className="hydrate-loader__rule hydrate-loader__rule--primary" />
             <div className="hydrate-loader__rule hydrate-loader__rule--secondary" />
             <div className="hydrate-loader__rule hydrate-loader__rule--tertiary" />
-            <div
-              data-slot="hydrate-loader-shimmer"
-              className="hydrate-loader__shimmer"
-            />
+            <div data-slot="hydrate-loader-shimmer" className="hydrate-loader__shimmer" />
             <div className="hydrate-loader__scan" />
           </div>
           <span className="hydrate-fallback__sr-only">Loading application</span>
@@ -434,11 +411,8 @@ export function HydrateFallback(): ReactElement {
           <p data-slot="hydrate-loader-title" className="hydrate-fallback__title">
             Preparing shell
           </p>
-          <p
-            data-slot="hydrate-loader-caption"
-            className="hydrate-fallback__caption"
-          >
-            Syncing layout and workflow state
+          <p data-slot="hydrate-loader-caption" className="hydrate-fallback__caption">
+            Syncing layout and theme state
           </p>
         </div>
       </div>
@@ -447,31 +421,28 @@ export function HydrateFallback(): ReactElement {
 }
 
 export default function App(): ReactElement {
-  return <Outlet />;
+  return (
+    <ThemeProvider defaultTheme="system">
+      <Outlet />
+    </ThemeProvider>
+  );
 }
 
-export function ErrorBoundary({
-  error,
-}: Route.ErrorBoundaryProps): ReactElement {
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps): ReactElement {
   // Log error for monitoring
-  logFrontendError(
-    error instanceof Error ? error.message : "Route error",
-    {
-      type: "route-error",
-      status: isRouteErrorResponse(error) ? error.status : undefined,
-      statusText: isRouteErrorResponse(error) ? error.statusText : undefined,
-      stack: error instanceof Error ? error.stack : undefined,
-    },
-  );
+  logFrontendError(error instanceof Error ? error.message : "Route error", {
+    type: "route-error",
+    status: isRouteErrorResponse(error) ? error.status : undefined,
+    statusText: isRouteErrorResponse(error) ? error.statusText : undefined,
+    stack: error instanceof Error ? error.stack : undefined,
+  });
 
   if (isRouteErrorResponse(error)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="max-w-md text-center">
           <CardContent className="pt-6">
-            <h1 className="text-6xl font-bold text-destructive mb-4">
-              {error.status}
-            </h1>
+            <h1 className="text-6xl font-bold text-destructive mb-4">{error.status}</h1>
             <p className="text-lg text-muted-foreground mb-2">
               {error.status === 404 ? "Page Not Found" : "Something went wrong"}
             </p>
@@ -494,9 +465,7 @@ export function ErrorBoundary({
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-destructive/10 flex items-center justify-center">
             <AlertTriangle className="w-8 h-8 text-destructive" />
           </div>
-          <h1 className="text-2xl font-bold text-destructive mb-2">
-            Application Error
-          </h1>
+          <h1 className="text-2xl font-bold text-destructive mb-2">Application Error</h1>
           <p className="text-muted-foreground mb-4">
             An unexpected error occurred. Please try again.
           </p>
