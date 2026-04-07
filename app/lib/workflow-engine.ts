@@ -1,3 +1,5 @@
+import { err, ok, type Result } from "neverthrow";
+
 /**
  * Pure workflow state used by the shell and any future backend-backed
  * workflow implementation. The engine owns only ordering and progression, not
@@ -80,6 +82,54 @@ export interface WorkflowProgress {
   percent: number;
 }
 
+type WorkflowLookupError =
+  | "empty-workflow"
+  | "invalid-step"
+  | "missing-next-step";
+
+function getOrderedStepIdsResult<TStage extends WorkflowStageDefinition>(
+  stages: readonly TStage[],
+): Result<string[], WorkflowLookupError> {
+  const orderedStepIds = stages.flatMap((stage) =>
+    stage.steps.map((step) => step.id),
+  );
+
+  if (orderedStepIds.length === 0) {
+    return err("empty-workflow");
+  }
+
+  return ok(orderedStepIds);
+}
+
+function getStepIndexResult(
+  orderedStepIds: readonly string[],
+  stepId: string,
+): Result<number, WorkflowLookupError> {
+  const stepIndex = orderedStepIds.indexOf(stepId);
+
+  if (stepIndex < 0) {
+    return err("invalid-step");
+  }
+
+  return ok(stepIndex);
+}
+
+function getWorkflowStepMetaResult<
+  TStage extends WorkflowStageDefinition,
+>(
+  stages: readonly TStage[],
+  runtimeState: WorkflowRuntimeState,
+  stepId: string,
+): Result<WorkflowStepMeta<TStage["steps"][number]>, WorkflowLookupError> {
+  const stepMeta = getWorkflowStepMetaById(stages, runtimeState, stepId);
+
+  if (!stepMeta) {
+    return err("invalid-step");
+  }
+
+  return ok(stepMeta);
+}
+
 /**
  * Reads the first step id so storage layers do not need to hardcode seeded
  * workflow ids.
@@ -87,7 +137,10 @@ export interface WorkflowProgress {
 export function getFirstWorkflowStepId<
   TStage extends WorkflowStageDefinition,
 >(stages: readonly TStage[]): string | null {
-  return stages[0]?.steps[0]?.id ?? null;
+  return getOrderedStepIdsResult(stages).match(
+    (orderedStepIds) => orderedStepIds[0] ?? null,
+    () => null,
+  );
 }
 
 /**
@@ -98,17 +151,16 @@ function getResolvedActiveStepId<TStage extends WorkflowStageDefinition>(
   stages: readonly TStage[],
   runtimeState: WorkflowRuntimeState,
 ): string | null {
-  const orderedStepIds = stages.flatMap((stage) => stage.steps.map((step) => step.id));
-
-  if (orderedStepIds.length === 0) {
-    return null;
-  }
-
-  if (orderedStepIds.includes(runtimeState.activeStepId)) {
-    return runtimeState.activeStepId;
-  }
-
-  return orderedStepIds[0] ?? null;
+  return getOrderedStepIdsResult(stages)
+    .andThen((orderedStepIds) =>
+      getStepIndexResult(orderedStepIds, runtimeState.activeStepId)
+        .map(() => runtimeState.activeStepId)
+        .orElse(() => ok(orderedStepIds[0] ?? null)),
+    )
+    .match(
+      (activeStepId) => activeStepId,
+      () => null,
+    );
 }
 
 /**
@@ -137,7 +189,10 @@ export function resolveWorkflowStages<
     }));
   }
 
-  const orderedStepIds = stages.flatMap((stage) => stage.steps.map((step) => step.id));
+  const orderedStepIds = getOrderedStepIdsResult(stages).match(
+    (stepIds) => stepIds,
+    (): string[] => [],
+  );
   const activeStepId = getResolvedActiveStepId(stages, runtimeState);
   const activeStepIndex = Math.max(orderedStepIds.indexOf(activeStepId ?? ""), 0);
 
@@ -276,13 +331,18 @@ export function getNextWorkflowStepMeta<
   stepId: string = runtimeState.activeStepId,
 ): WorkflowStepMeta<TStage["steps"][number]> | null {
   const steps = getWorkflowStepMetas(stages, runtimeState);
-  const currentIndex = steps.findIndex((step) => step.stepId === stepId);
+  const stepIds = steps.map((step) => step.stepId);
 
-  if (currentIndex < 0 || currentIndex >= steps.length - 1) {
-    return null;
-  }
+  return getStepIndexResult(stepIds, stepId)
+    .andThen((currentIndex) => {
+      const nextStep = steps[currentIndex + 1];
 
-  return steps[currentIndex + 1] ?? null;
+      return nextStep ? ok(nextStep) : err("missing-next-step");
+    })
+    .match(
+      (nextStep) => nextStep,
+      () => null,
+    );
 }
 
 /**
@@ -329,7 +389,13 @@ export function setActiveWorkflowStep<
   runtimeState: WorkflowRuntimeState,
   stepId: string,
 ): WorkflowRuntimeState {
-  if (!getWorkflowStepMetaById(stages, { ...runtimeState, workflowCompleted: false }, stepId)) {
+  if (
+    getWorkflowStepMetaResult(
+      stages,
+      { ...runtimeState, workflowCompleted: false },
+      stepId,
+    ).isErr()
+  ) {
     return runtimeState;
   }
 

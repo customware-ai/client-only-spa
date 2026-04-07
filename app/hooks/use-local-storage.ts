@@ -1,4 +1,5 @@
 import { useCallback, useRef, useSyncExternalStore } from "react";
+import { fromThrowable, type Result } from "neverthrow";
 
 /**
  * Per-key subscriber registry for same-runtime hook instances.
@@ -33,12 +34,45 @@ interface LocalStorageStoreSnapshot<TValue> extends LocalStorageSnapshot<TValue>
   isHydrated: boolean;
 }
 
+function createLocalStorageError(
+  message: string,
+  error: unknown,
+): Error {
+  if (error instanceof Error) {
+    return new Error(message, { cause: error });
+  }
+
+  return new Error(message);
+}
+
 /**
  * Safely serializes a localStorage value for persistence.
  * JSON is the shared storage format for the generic hook.
  */
-function serializeLocalStorageValue<TValue>(value: TValue): string {
-  return JSON.stringify(value);
+function serializeLocalStorageValue<TValue>(
+  value: TValue,
+): Result<string, Error> {
+  return fromThrowable(
+    (input: TValue): string => JSON.stringify(input),
+    (error: unknown): Error =>
+      createLocalStorageError(
+        "Failed to serialize localStorage value.",
+        error,
+      ),
+  )(value);
+}
+
+function parseLocalStorageValue<TValue>(
+  rawValue: string,
+): Result<TValue, Error> {
+  return fromThrowable(
+    (input: string): TValue => JSON.parse(input) as TValue,
+    (error: unknown): Error =>
+      createLocalStorageError(
+        "Failed to parse localStorage value.",
+        error,
+      ),
+  )(rawValue);
 }
 
 /**
@@ -57,17 +91,16 @@ function parseLocalStorageSnapshot<TValue>(
     };
   }
 
-  try {
-    return {
-      value: JSON.parse(rawValue) as TValue,
+  return parseLocalStorageValue<TValue>(rawValue).match(
+    (value) => ({
+      value,
       rawValue,
-    };
-  } catch {
-    return {
+    }),
+    () => ({
       value: defaultValue,
       rawValue,
-    };
-  }
+    }),
+  );
 }
 
 /**
@@ -122,6 +155,15 @@ export function clearLocalStorageKey(key: string): void {
  * Generic localStorage hook with loop protection.
  * The hook keeps storage and React state synchronized while ignoring echoed
  * reads that carry the same serialized snapshot a local write just produced.
+ */
+/**
+ * Usage:
+ * const [value, setValue, isHydrated] = useLocalStorage("key", defaultValue);
+ *
+ * - `value` is the current parsed localStorage value for the key.
+ * - `setValue` accepts either the next value or a functional updater.
+ * - `isHydrated` stays `false` during the server-safe fallback pass and flips
+ *   to `true` once the browser snapshot has been read.
  */
 export function useLocalStorage<TValue>(
   key: string,
@@ -231,7 +273,14 @@ export function useLocalStorage<TValue>(
       typeof nextValue === "function"
         ? (nextValue as (previousValue: TValue) => TValue)(currentSnapshot.value)
         : nextValue;
-    const serializedValue = serializeLocalStorageValue(resolvedValue);
+    const serializedValue = serializeLocalStorageValue(resolvedValue).match(
+      (value) => value,
+      () => null,
+    );
+
+    if (serializedValue === null) {
+      return;
+    }
 
     if (serializedValue === currentSnapshot.rawValue) {
       return;
