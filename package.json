@@ -6,7 +6,7 @@
     "dev": "react-router dev",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "npm run build && npm run preview",
+    "start": "npm run preview",
     "typegen": "react-router typegen",
     "typecheck": "react-router typegen && tsgo --noEmit -p tsconfig.json",
     "lint": "oxlint --type-aware .",
