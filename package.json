@@ -53,10 +53,10 @@
     "oxlint": "1.59.0",
     "oxlint-tsgolint": "0.20.0",
     "tailwindcss": "4.1.18",
-    "vite": "8.0.4"
+    "vite": "8.0.7"
   },
   "overrides": {
     "picomatch": "4.0.4",
-    "vite": "8.0.4"
+    "vite": "8.0.7"
   }
 }
