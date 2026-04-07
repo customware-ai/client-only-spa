@@ -26,9 +26,7 @@ interface FrontendLogPayload {
   context: Record<string, unknown>;
 }
 
-const defaultLoggerOptions: Required<Pick<ErrorLoggerOptions, "endpoint">> = {
-  endpoint: "/logs",
-};
+const defaultLoggerOptions: ErrorLoggerOptions = {};
 
 let attachCount = 0;
 let windowErrorHandler: ((event: ErrorEvent) => void) | null = null;
@@ -91,8 +89,13 @@ function buildLogPayload(
 export function sendFrontendLog(
   payload: FrontendLogPayload,
   fetchImpl: typeof fetch,
-  endpoint: string,
+  endpoint?: string,
 ): void {
+  if (!endpoint) {
+    console.error("Frontend runtime error", payload);
+    return;
+  }
+
   void fetchImpl(endpoint, {
     method: "POST",
     headers: {

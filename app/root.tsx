@@ -460,7 +460,6 @@ export function ErrorBoundary({
       statusText: isRouteErrorResponse(error) ? error.statusText : undefined,
       stack: error instanceof Error ? error.stack : undefined,
     },
-    { endpoint: "/logs" },
   );
 
   if (isRouteErrorResponse(error)) {

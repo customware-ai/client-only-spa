@@ -4,11 +4,6 @@
 
 .tmp/
 tmp/
-/.runtime.logs
-logs/
-
-# Local sqlite database files
-.dbs/
 
 # React Router
 /.react-router/
