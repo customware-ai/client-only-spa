@@ -1,6 +1,6 @@
-import type { ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router";
-import { Layers3, UserRound } from "lucide-react";
+import { FolderKanban, Layers3, UserRound } from "lucide-react";
 
 import { ModeToggle } from "~/components/mode-toggle";
 import { Button } from "~/components/ui/Button";
@@ -12,7 +12,22 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from "~/components/ui/Popover";
-import { cn } from "~/lib/utils";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarSeparator,
+  SidebarTrigger,
+} from "~/components/ui/Sidebar";
 
 interface NavigationItem {
   label: string;
@@ -60,12 +75,79 @@ function WorkspaceUserMenu(): ReactElement {
 
 export default function MainLayout(): ReactElement {
   const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="flex min-h-screen flex-col">
+    <SidebarProvider
+      defaultOpen
+      open={sidebarOpen}
+      onOpenChange={setSidebarOpen}
+      className="bg-background text-foreground [--sidebar-width:17rem] [--sidebar-width-icon:3.5rem]"
+    >
+      <Sidebar side="left" collapsible="offcanvas" className="border-r-0">
+        <SidebarHeader className="gap-3 border-b border-sidebar-border/70 p-3">
+          <Link
+            to="/"
+            className="flex min-w-0 items-center gap-3 rounded-xl border border-sidebar-border/70 bg-sidebar-accent/40 px-3 py-3"
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-sidebar-border bg-sidebar text-sidebar-foreground">
+              <Layers3 className="h-4 w-4" />
+            </div>
+            <div className="min-w-0 group-data-[collapsible=icon]:hidden">
+              <div className="truncate text-sm font-semibold text-sidebar-foreground">
+                Customware Template
+              </div>
+              <div className="truncate text-xs text-sidebar-foreground/70">
+                Generic client-only shell
+              </div>
+            </div>
+          </Link>
+        </SidebarHeader>
+
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navigationItems.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname === item.href}
+                      tooltip={item.label}
+                      className="h-auto items-start px-3 py-3"
+                    >
+                      <NavLink to={item.href}>
+                        <FolderKanban className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span className="min-w-0">
+                          <span className="block text-sm font-medium">{item.label}</span>
+                          <span className="mt-1 block text-xs leading-5 text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
+                            {item.description}
+                          </span>
+                        </span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+
+        <SidebarSeparator />
+
+        <SidebarFooter className="p-3">
+          <div className="rounded-xl border border-sidebar-border/70 bg-sidebar-accent/30 px-3 py-3 text-xs leading-5 text-sidebar-foreground/70">
+            Main content is currently provided by <code>Demo.tsx</code>.
+          </div>
+        </SidebarFooter>
+      </Sidebar>
+
+      <SidebarInset className="min-h-screen min-w-0">
         <header className="border-b border-border bg-card/90 backdrop-blur">
           <div className="mx-auto flex h-16 w-full max-w-[1600px] items-center gap-4 px-4 lg:px-6">
+            <SidebarTrigger aria-label="Toggle navigation sidebar" />
+
             <Link to="/" className="flex min-w-0 items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-muted text-foreground">
                 <Layers3 className="h-4 w-4" />
@@ -87,54 +169,19 @@ export default function MainLayout(): ReactElement {
           </div>
         </header>
 
-        <div className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col lg:flex-row">
-          <aside className="border-b border-border bg-card/60 lg:min-h-0 lg:w-72 lg:border-r lg:border-b-0">
-            <div className="space-y-6 p-4 lg:p-5">
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                  Navigation
-                </p>
-                <nav className="space-y-1">
-                  {navigationItems.map((item) => (
-                    <NavLink
-                      key={item.href}
-                      to={item.href}
-                      className={({ isActive }): string =>
-                        cn(
-                          "block rounded-xl border border-transparent px-3 py-3 transition-colors duration-150",
-                          "hover:border-border hover:bg-muted/70",
-                          (isActive || location.pathname === item.href) &&
-                            "border-border bg-muted text-foreground",
-                        )
-                      }
-                    >
-                      <div className="text-sm font-medium text-foreground">{item.label}</div>
-                      <div className="mt-1 text-xs leading-5 text-muted-foreground">
-                        {item.description}
-                      </div>
-                    </NavLink>
-                  ))}
-                </nav>
-              </div>
-            </div>
-          </aside>
-
-          <div className="flex min-w-0 flex-1 flex-col">
-            <main className="min-w-0 flex-1 p-4 lg:p-6">
-              <div className="mx-auto w-full max-w-[1400px]">
-                <Outlet />
-              </div>
-            </main>
-
-            <footer className="border-t border-border bg-card/70">
-              <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-2 px-4 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between lg:px-6">
-                <span>Status: reference shell active</span>
-                <span>Main content is currently provided by `Demo.tsx`.</span>
-              </div>
-            </footer>
+        <main className="min-w-0 flex-1 p-4 lg:p-6">
+          <div className="mx-auto w-full max-w-[1400px]">
+            <Outlet />
           </div>
-        </div>
-      </div>
-    </div>
+        </main>
+
+        <footer className="border-t border-border bg-card/70">
+          <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-2 px-4 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between lg:px-6">
+            <span>Status: reference shell active</span>
+            <span>Main content is currently provided by `Demo.tsx`.</span>
+          </div>
+        </footer>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
