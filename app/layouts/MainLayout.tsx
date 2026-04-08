@@ -1,6 +1,6 @@
 import { useState, type ReactElement } from "react";
-import { Link, NavLink, Outlet, useLocation } from "react-router";
-import { FolderKanban, Layers3, UserRound } from "lucide-react";
+import { Link, Outlet } from "react-router";
+import { Layers3, UserRound } from "lucide-react";
 
 import { ModeToggle } from "~/components/mode-toggle";
 import { Button } from "~/components/ui/Button";
@@ -15,33 +15,11 @@ import {
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   SidebarProvider,
-  SidebarSeparator,
   SidebarTrigger,
 } from "~/components/ui/Sidebar";
-
-interface NavigationItem {
-  label: string;
-  href: string;
-  description: string;
-}
-
-const navigationItems: NavigationItem[] = [
-  {
-    label: "Reference Catalog",
-    href: "/",
-    description: "Shipped component surface and layout patterns.",
-  },
-];
 
 function WorkspaceUserMenu(): ReactElement {
   return (
@@ -74,7 +52,6 @@ function WorkspaceUserMenu(): ReactElement {
 }
 
 export default function MainLayout(): ReactElement {
-  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
@@ -105,42 +82,8 @@ export default function MainLayout(): ReactElement {
         </SidebarHeader>
 
         <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {navigationItems.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={location.pathname === item.href}
-                      tooltip={item.label}
-                      className="h-auto items-start px-3 py-3"
-                    >
-                      <NavLink to={item.href}>
-                        <FolderKanban className="mt-0.5 h-4 w-4 shrink-0" />
-                        <span className="min-w-0">
-                          <span className="block text-sm font-medium">{item.label}</span>
-                          <span className="mt-1 block text-xs leading-5 text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
-                            {item.description}
-                          </span>
-                        </span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <div className="flex-1" />
         </SidebarContent>
-
-        <SidebarSeparator />
-
-        <SidebarFooter className="p-3">
-          <div className="rounded-xl border border-sidebar-border/70 bg-sidebar-accent/30 px-3 py-3 text-xs leading-5 text-sidebar-foreground/70">
-            Main content is currently provided by <code>Demo.tsx</code>.
-          </div>
-        </SidebarFooter>
       </Sidebar>
 
       <SidebarInset className="min-h-screen min-w-0">
@@ -174,13 +117,6 @@ export default function MainLayout(): ReactElement {
             <Outlet />
           </div>
         </main>
-
-        <footer className="border-t border-border bg-card/70">
-          <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-2 px-4 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between lg:px-6">
-            <span>Status: reference shell active</span>
-            <span>Main content is currently provided by `Demo.tsx`.</span>
-          </div>
-        </footer>
       </SidebarInset>
     </SidebarProvider>
   );
