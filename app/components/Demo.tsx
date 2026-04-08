@@ -67,7 +67,6 @@ import {
 import { Button } from "~/components/ui/Button";
 import { ButtonGroup, ButtonGroupSeparator, ButtonGroupText } from "~/components/ui/button-group";
 import { Calendar } from "~/components/ui/calendar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/Card";
 import {
   Carousel,
   CarouselContent,
@@ -337,18 +336,13 @@ function ShowcaseCard({
   children: ReactNode;
 }): ReactElement {
   return (
-    <Card
-      className={cn(
-        "overflow-hidden rounded-lg bg-card shadow-none ring-stone-200/70 dark:ring-zinc-800/80",
-        className,
-      )}
-    >
-      <CardHeader className="gap-1.5">
-        <CardTitle className="text-base">{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
+    <div className={cn("min-w-0 space-y-4", className)}>
+      <div className="space-y-1.5">
+        <h3 className="text-base font-medium tracking-tight">{title}</h3>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+      {children}
+    </div>
   );
 }
 
@@ -595,7 +589,7 @@ export default function Demo(): ReactElement {
           title="Identity and Typography"
           description="Foundational content patterns and low-level display primitives."
         >
-          <div className="grid items-start gap-4 xl:grid-cols-2 2xl:grid-cols-3">
+          <div className="grid items-start gap-x-6 gap-y-10 xl:grid-cols-2">
             <ShowcaseCard
               title="Badges, avatars, breadcrumbs"
               description="Compact identity treatments."
@@ -1336,10 +1330,11 @@ export default function Demo(): ReactElement {
           title="Feedback and Utilities"
           description="Alerts, loading states, notifications, and compact helper components."
         >
-          <div className="grid gap-4">
+          <div className="grid gap-4 xl:grid-cols-2">
             <ShowcaseCard
               title="Alerts and loading"
               description="Status, empty, skeleton, and spinner states."
+              className="xl:col-span-2"
             >
               <div className="space-y-4">
                 <Alert variant="success" title="Catalog synced">
