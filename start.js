@@ -1,5 +1,5 @@
+import { appendFile, stat, readFile } from "node:fs/promises";
 import { createReadStream, existsSync } from "node:fs";
-import { stat, readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,6 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const CLIENT_BUILD_DIR = path.join(__dirname, "build", "client");
 const INDEX_HTML_PATH = path.join(CLIENT_BUILD_DIR, "index.html");
+const RUNTIME_LOG_PATH = path.join(__dirname, ".runtime.logs");
 const DEFAULT_PORT = 8080;
 
 const MIME_TYPES = {
@@ -46,6 +47,52 @@ function sendFile(response, filePath) {
   createReadStream(filePath).pipe(response);
 }
 
+async function readRequestBody(request) {
+  const chunks = [];
+
+  for await (const chunk of request) {
+    chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+  }
+
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+function normalizeLogLine(payload) {
+  const timestamp =
+    typeof payload.timestamp === "string" && Number.isNaN(Date.parse(payload.timestamp)) === false
+      ? payload.timestamp
+      : new Date().toISOString();
+  const source = typeof payload.source === "string" ? payload.source : "app";
+  const level = typeof payload.level === "string" ? payload.level.toUpperCase() : "ERROR";
+  const message =
+    typeof payload.message === "string" && payload.message.trim().length > 0
+      ? payload.message.trim()
+      : "Frontend runtime error";
+  const context =
+    payload.context && typeof payload.context === "object" ? ` ${JSON.stringify(payload.context)}` : "";
+
+  return `[${timestamp}] [${source}] [${level}] ${message}${context}`;
+}
+
+async function handleLogRequest(request, response) {
+  const requestBody = await readRequestBody(request);
+
+  let payload;
+  try {
+    payload = JSON.parse(requestBody);
+  } catch {
+    response.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+    response.end("Invalid JSON payload.");
+    return;
+  }
+
+  const line = normalizeLogLine(payload);
+  await appendFile(RUNTIME_LOG_PATH, `${line}\n`, "utf8");
+
+  response.writeHead(204);
+  response.end();
+}
+
 async function serveSpaDocument(response) {
   const html = await readFile(INDEX_HTML_PATH);
   response.writeHead(200, {
@@ -75,6 +122,11 @@ async function handleRequest(request, response) {
   if (url.pathname === "/health") {
     response.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
     response.end("ok");
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/logs") {
+    await handleLogRequest(request, response);
     return;
   }
 
