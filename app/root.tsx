@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactElement, ReactNode } from "react";
+import { useEffect, type ReactElement, type ReactNode } from "react";
 import {
   isRouteErrorResponse,
   Links,
@@ -13,7 +13,7 @@ import { AlertTriangle } from "lucide-react";
 
 import type { Route } from "./+types/root";
 import "./app.css";
-import { logFrontendError } from "./utils/error-logger";
+import { attachGlobalFrontendErrorHandlers, logFrontendError } from "./utils/error-logger";
 import { Card, CardContent } from "./components/ui/Card";
 import { Button } from "./components/ui/Button";
 import { ThemeProvider } from "./components/theme-provider";
@@ -421,6 +421,20 @@ export function HydrateFallback(): ReactElement {
 }
 
 export default function App(): ReactElement {
+  /**
+   * @critical
+   * @description
+   * Attach global frontend error handlers once on app mount.
+   * This forwards uncaught window/document errors and unhandled promise
+   * rejections to `POST /logs`, which persists logs in `.runtime.logs`.
+   * @important
+   * Do NOT remove this initializer. Without it, frontend runtime errors
+   * are no longer captured for the shared log pipeline.
+   */
+  useEffect((): (() => void) => {
+    return attachGlobalFrontendErrorHandlers();
+  }, []);
+
   return (
     <ThemeProvider defaultTheme="system">
       <Outlet />
