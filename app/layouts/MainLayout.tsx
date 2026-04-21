@@ -15,7 +15,6 @@ import {
 import {
   Sidebar,
   SidebarContent,
-  SidebarHeader,
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
@@ -31,19 +30,15 @@ function WorkspaceUserMenu(): ReactElement {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72 p-0">
         <PopoverHeader className="px-4 py-3">
-          <PopoverTitle className="text-sm font-semibold">Template User</PopoverTitle>
+          <PopoverTitle className="text-sm font-semibold">Workspace</PopoverTitle>
           <PopoverDescription className="text-sm">
-            Generic shell controls for the starter workspace.
+            Account and workspace controls.
           </PopoverDescription>
         </PopoverHeader>
         <div className="space-y-3 px-4 py-4 text-sm text-muted-foreground">
           <div>
             <div className="text-muted-foreground">Signed in as</div>
             <div className="mt-1 font-medium text-foreground">Workspace owner</div>
-          </div>
-          <div>
-            <div className="text-muted-foreground">Template mode</div>
-            <div className="mt-1 font-medium text-foreground">Generic client-only SPA</div>
           </div>
         </div>
       </PopoverContent>
@@ -61,28 +56,16 @@ export default function MainLayout(): ReactElement {
       onOpenChange={setSidebarOpen}
       className="bg-background text-foreground [--sidebar-width:17rem] [--sidebar-width-icon:3.5rem]"
     >
+      {/*
+        SIDEBAR SHELL — ships empty. The active vertical skill fills SidebarContent
+        with its own nav (CPQ: vertical stepper + saved items; Trades: stepper;
+        CRM: entity navigation). The skill also adds its own contextual heading
+        ("Quote workflow", "Pipeline", etc.) inside SidebarContent — do NOT put
+        the company name or logo in here. Brand lives in the header only.
+      */}
       <Sidebar side="left" collapsible="offcanvas" className="border-r-0">
-        <SidebarHeader className="gap-3 border-b border-sidebar-border/70 p-3">
-          <Link
-            to="/"
-            className="flex min-w-0 items-center gap-3 rounded-xl border border-sidebar-border/70 bg-sidebar-accent/40 px-3 py-3"
-          >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-sidebar-border bg-sidebar text-sidebar-foreground">
-              <Layers3 className="h-4 w-4" />
-            </div>
-            <div className="min-w-0 group-data-[collapsible=icon]:hidden">
-              <div className="truncate text-sm font-semibold text-sidebar-foreground">
-                Customware Template
-              </div>
-              <div className="truncate text-xs text-sidebar-foreground/70">
-                Generic client-only shell
-              </div>
-            </div>
-          </Link>
-        </SidebarHeader>
-
         <SidebarContent>
-          <div className="flex-1" />
+          {/* SKILL FILLS THIS: stepper, entity nav, saved items */}
         </SidebarContent>
       </Sidebar>
 
@@ -91,6 +74,12 @@ export default function MainLayout(): ReactElement {
           <div className="mx-auto flex h-16 w-full max-w-[1600px] items-center gap-4 px-4 lg:px-6">
             <SidebarTrigger aria-label="Toggle navigation sidebar" />
 
+            {/*
+              BRAND SLOT — single source of truth. Builder replaces:
+                Layers3 placeholder icon → <img src={logoUrl} className="h-8 w-auto" />
+                "Customware Template"    → company name from DOMAIN.md
+                subtitle                 → optional tagline, or remove
+            */}
             <Link to="/" className="flex min-w-0 items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-muted text-foreground">
                 <Layers3 className="h-4 w-4" />
@@ -108,6 +97,7 @@ export default function MainLayout(): ReactElement {
             <div className="ml-auto flex items-center gap-2">
               <ModeToggle />
               <WorkspaceUserMenu />
+              {/* SKILL ADDS: role switcher DropdownMenu goes here, before user menu */}
             </div>
           </div>
         </header>
