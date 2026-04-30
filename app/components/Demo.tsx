@@ -589,7 +589,7 @@ export default function Demo(): ReactElement {
           title="Identity and Typography"
           description="Foundational content patterns and low-level display primitives."
         >
-          <div className="grid items-start gap-x-6 gap-y-10 xl:grid-cols-2">
+          <div className="space-y-10">
             <ShowcaseCard
               title="Badges, avatars, breadcrumbs"
               description="Compact identity treatments."
@@ -1330,12 +1330,8 @@ export default function Demo(): ReactElement {
           title="Feedback and Utilities"
           description="Alerts, loading states, notifications, and compact helper components."
         >
-          <div className="grid gap-4 xl:grid-cols-2">
-            <ShowcaseCard
-              title="Alerts and loading"
-              description="Status, empty, skeleton, and spinner states."
-              className="xl:col-span-2"
-            >
+          <div className="space-y-4">
+            <ShowcaseCard title="Alerts and loading" description="Status, empty, skeleton, and spinner states.">
               <div className="space-y-4">
                 <Alert variant="success" title="Catalog synced">
                   All intended components are wired into the client-only template.
