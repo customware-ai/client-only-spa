@@ -13,7 +13,7 @@ Jump to section:
 | Section | Description |
 | --- | --- |
 | [Core Principles](#core-principles) | Type safety, client architecture, error handling, UX |
-| [Commands](#commands) | npm scripts for dev, build, preview, start, lint, and typecheck |
+| [Commands](#commands) | pnpm scripts for dev, build, preview, start, lint, and typecheck |
 | [Architecture](#architecture) | Layered client architecture, data flow, storage boundaries |
 | [Development Requirements](#development-requirements) | Non-negotiable rules, code style, patterns |
 | [Directory Structure](#directory-structure) | File organization and structure principles |
@@ -75,9 +75,9 @@ This codebase follows strict architectural patterns and coding standards.
 
 - Run checks only at the very end of the task.
 - Use the narrowest relevant check for scoped changes while iterating.
-- For code changes, run `npm run check` before marking work complete.
-- For route, shared UI, config, or build-affecting changes, also run `npm run build`.
-- For runtime behavior changes, use `npm run start` for final local verification.
+- For code changes, run `pnpm run check` before marking work complete.
+- For route, shared UI, config, or build-affecting changes, also run `pnpm run build`.
+- For runtime behavior changes, use `pnpm run start` for final local verification.
 - No need to run checks for docs-only or non-code-only changes.
 
 ### 5. Code Quality Standards
@@ -102,20 +102,20 @@ All user-facing code must implement proper UX patterns. Poor UX is a bug.
 ## Commands
 
 ```bash
-npm install
-npm run dev
-npm run build
-npm run preview
-npm run start
-npm run typecheck
-npm run lint
-npm run check
+pnpm install
+pnpm run dev
+pnpm run build
+pnpm run preview
+pnpm run start
+pnpm run typecheck
+pnpm run lint
+pnpm run check
 ```
 
 Notes:
 
-- `npm run typecheck` uses `tsgo` from `@typescript/native-preview`.
-- `npm run start` serves the existing `build/client` output through the repo-local Node static server in `start.js`.
+- `pnpm run typecheck` uses `tsgo` from `@typescript/native-preview`.
+- `pnpm run start` serves the existing `build/client` output through the repo-local Node static server in `start.js`.
 
 ---
 
@@ -173,8 +173,8 @@ Browser Storage
 2. Validation Before Completion
    - Run checks only at the very end of the task.
    - Use focused validation based on the scope of changes.
-   - Run `npm run check` before completion for code changes.
-   - Run `npm run build` for route, shared UI, config, or build-output changes.
+   - Run `pnpm run check` before completion for code changes.
+   - Run `pnpm run build` for route, shared UI, config, or build-output changes.
    - Fix all issues before moving on.
 
 3. Single Source of Truth
@@ -824,9 +824,9 @@ Re-read files anytime, especially when the conversation is compacted:
 ### Rules
 
 - Always call `task_complete`. Never delete task files manually.
-- Run checks only at the very end of each task. Use the narrowest relevant check for scoped changes, and use `npm run check` only when multiple areas were updated.
-- For code changes, run `npm run check` before marking a task complete.
-- For runtime-affecting UI, route, shared-state, or config changes, also run `npm run build` and verify through `npm run start` before marking a task complete.
+- Run checks only at the very end of each task. Use the narrowest relevant check for scoped changes, and use `pnpm run check` only when multiple areas were updated.
+- For code changes, run `pnpm run check` before marking a task complete.
+- For runtime-affecting UI, route, shared-state, or config changes, also run `pnpm run build` and verify through `pnpm run start` before marking a task complete.
 - No need to run checks for docs-only or non-code-only updates such as Markdown, copy, comments, or other non-executable content.
 - If you feel the conversation is getting long, do not summarize and stop. Keep executing the task.
 
@@ -857,9 +857,9 @@ Before marking work complete:
 
 1. Confirm the requested UI, route, storage, or template behavior is actually implemented.
 2. Remove temporary debugging code, one-off console logs, and dead scaffolding added during the task.
-3. Run the narrowest relevant validation while iterating, then run `npm run check` before finishing executable code changes.
-4. Run `npm run build` when the task affects routes, shared UI, config, or build output expectations.
-5. Use `npm run start` for final runtime verification when the changed behavior should be checked in the built app.
+3. Run the narrowest relevant validation while iterating, then run `pnpm run check` before finishing executable code changes.
+4. Run `pnpm run build` when the task affects routes, shared UI, config, or build output expectations.
+5. Use `pnpm run start` for final runtime verification when the changed behavior should be checked in the built app.
 6. For docs-only changes, no code validation is required.
 7. Call `task_complete` instead of deleting task files manually.
 8. In the final handoff, briefly state what changed, what was validated, and any remaining caveats or follow-up work.
